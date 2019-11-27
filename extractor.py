@@ -1,0 +1,79 @@
+import re
+from bs4 import BeautifulSoup
+from bs4 import SoupStrainer
+import requests
+import nltk
+from nltk.corpus import stopwords
+
+# nltk.download("stopwords")
+
+def fetch():
+    with open('dog.html', 'r') as file:
+        content = file.read()
+        return content
+
+
+def html_extractor():
+    # html = fetch()
+    url = 'https://en.wikipedia.org/wiki/Cat'
+    res = requests.get(url)
+    html = res.text
+
+    #get links
+    soup = BeautifulSoup(html, 'html.parser')
+    links = []
+    for link in soup.findAll('a', attrs={'href': re.compile("^http")}):
+        links.append(link.get('href'))
+
+    #get text
+    soup = BeautifulSoup(html, 'html.parser')
+    for script in soup(["script", "style","head"]):
+        script.decompose()
+
+    body = soup.get_text()
+
+    # lowercase everything
+    body = body.lower()
+
+    # Replace all email addresses with white space
+    regx = re.compile(r"\b[^\s]+@[^\s]+[.][^\s]+\b")
+    body, nemails = regx.subn(repl=" ", string=body)
+
+    # Replace all numbers with white space
+    regx = re.compile(r"\b[\d.]+\b")
+    body = regx.sub(repl=" ", string=body)
+
+
+    # Remove all other punctuation (replace with white space)
+    regx = re.compile(r"([^\w\s]+)|([_-]+)")
+    body = regx.sub(repl=" ", string=body)
+
+    #Replace all newlines and blanklines with special strings
+    regx = re.compile(r"\n")
+    body = regx.sub(repl=" ", string=body)
+    regx = re.compile(r"\n\n")
+    body = regx.sub(repl=" ", string=body)
+
+    #Make all white space a single space
+    regx = re.compile(r"\s+")
+    body = regx.sub(repl=" ", string=body)
+
+    #Remove any trailing or leading white space
+    body = body.strip(" ")
+
+    # Remove all useless stopwords
+    bodywords = body.split(" ")
+    keepwords = [word for word in bodywords if word not in stopwords.words('english')]
+
+    # Stem all words
+    # stemmer = SnowballStemmer("english")
+    # stemwords = [stemmer.stem(wd) for wd in keepwords]
+    # body = " ".join(stemwords)
+
+    return keepwords, links
+
+
+words, links = html_extractor()
+print(words)
+print(links)
+
