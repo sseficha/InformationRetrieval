@@ -1,9 +1,11 @@
 beautifulsoup4==4.8.1
 certifi==2019.9.11
 chardet==3.0.4
+dnspython==1.16.0
 idna==2.8
 nltk==3.4.5
 numpy==1.17.4
+pymongo==3.9.0
 requests==2.22.0
 six==1.13.0
 soupsieve==1.9.5
