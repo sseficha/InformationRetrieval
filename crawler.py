@@ -1,5 +1,4 @@
 from extractor import html_extractor
-from word_queue import WordQueue
 import threading
 import time
 
