@@ -1,21 +1,13 @@
 import re
 from bs4 import BeautifulSoup
-from bs4 import SoupStrainer
 import requests
 import nltk
 from nltk.corpus import stopwords
 
 # nltk.download("stopwords")
 
-def fetch():
-    with open('dog.html', 'r') as file:
-        content = file.read()
-        return content
 
-
-def html_extractor():
-    # html = fetch()
-    url = 'https://en.wikipedia.org/wiki/Cat'
+def html_extractor(url):
     res = requests.get(url)
     html = res.text
 
@@ -73,7 +65,4 @@ def html_extractor():
     return keepwords, links
 
 
-words, links = html_extractor()
-print(words)
-print(links)
 
