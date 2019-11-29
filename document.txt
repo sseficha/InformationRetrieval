@@ -1,4 +1,2 @@
 Information Retrieval
 information retrieval is the activity of obtaining information system resources that are relevant to an information need from a collection of those resources Searches can be based on full text or other content based indexing information retrieval is the science of searching for information in a document searching for documents themselves and also searching for the metadata that describes data and for databases of texts images or sounds
-google
-Google is an American multinational technology company that specializes in Internet related services and products which include online advertising technologies search engine cloud computing software and hardware It is considered one of the Big Four technology companies alongside Amazon Apple and Facebook
