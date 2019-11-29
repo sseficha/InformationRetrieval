@@ -8,14 +8,26 @@ from nltk.corpus import stopwords
 
 
 def html_extractor(url):
-    res = requests.get(url)
-    html = res.text
+    #changed to get html instead of link for now
+    f = open('./samples/'+url, 'r')
+    html = f.read()
+    f.close()
+
+    #res = requests.get(url)
+    #html = res.text
 
     #get links
+    # soup = BeautifulSoup(html, 'html.parser')
+    # links = []
+    # for link in soup.findAll('a', attrs={'href': re.compile("^http")}):
+    #     links.append(link.get('href'))
+
+    #changed for now
     soup = BeautifulSoup(html, 'html.parser')
     links = []
-    for link in soup.findAll('a', attrs={'href': re.compile("^http")}):
+    for link in soup.findAll('a'):
         links.append(link.get('href'))
+
 
     #get text
     soup = BeautifulSoup(html, 'html.parser')
