@@ -11,12 +11,15 @@ class Index:
         self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
         self.db = self.cluster["InformationRetrieval"]
         self.collection = self.db["Indexer"]
-        # self.doc_names = self.db["doc_names"]
         self.di = {}
+        self.alist = []
+        self.found = []
+        self.posts = []
         # self.collection.delete_many({})
-    def update_indexer(self, data):
+    def update_indexer(self):
 
-        to_be_updated = self.create_inverted_index_in_ram(data)
+
+        to_be_updated = self.posts
 
         '''
         Paramater:
@@ -39,7 +42,12 @@ class Index:
             else:
                 list_of_terms.append(term)
                 self.collection.insert_one(x)
+
         self.di.clear()
+        self.posts.clear()
+        self.alist.clear()
+        self.found.clear()
+
     def create_inverted_index_in_ram(self,data):
         titles = []
         content = []
@@ -53,15 +61,16 @@ class Index:
         for phrase in content:
             li = phrase.split(" ")
             words_in_list.append(li)
+        # for x in words_in_list:
+        #     print(x)
 
         for i in range(len(titles)):
             self.di.update({titles[i] : words_in_list[i]})
-
+        # print(self.di)
+        # print("=====================")
         #creation of index ,will put comments later
 
-        alist = []
-        found = []
-        posts = []
+
         for title in titles:
             s = []
             d = defaultdict(list)
@@ -69,34 +78,32 @@ class Index:
                 s.append((word,i))
             for k,v in s:
                 d[k].append(v)
-            alist.append(d)
+            self.alist.append(d)
             for word in(self.di.get(title)):
                 embeddedDict = {
                     "nameDoc": title,
                     "tf": len(d.get(word)),
                     "positions": d.get(word)
                 }
-                if word not in found:
+                if word not in self.found:
                     post = ({"_id": word,
                              "counter": 1,
                              "docPos": [embeddedDict]})
-                    posts.append(post)
-                    found.append(word)
+                    self.posts.append(post)
+                    self.found.append(word)
                 else:
-                    for pos in posts:
-                       namedocs = []
+                    for pos in self.posts:
                        if pos.get("_id") == word:
+                            namedocs = []
                             x = pos.get("docPos",{})
                             for y in x:
                                 namedocs.append(y.get("nameDoc"))
                             if embeddedDict.get("nameDoc") not in namedocs:
                                 x.append(embeddedDict)
 
-        # for x in posts:
-        #     print(x)
-
-        return posts
-
+    def print_posts(self):
+        for x in self.posts:
+            print(x)
     #top-k (in progress)
     def top_k_documents(self,query):
         C = []
@@ -111,8 +118,28 @@ with open("document.txt", "r") as doc:
     #different documents
     data = doc.readlines()
 
+with open("document2.txt", "r") as doc:
+    #different documents
+    data2 = doc.readlines()
+
+with open("document3.txt", "r") as doc:
+    #different documents
+    data3 = doc.readlines()
+
+with open("document4.txt", "r") as doc:
+    #different documents
+    data4 = doc.readlines()
+
 ind = Index()
-ind.update_indexer(data)
+ind.create_inverted_index_in_ram(data)
+ind.create_inverted_index_in_ram(data3)
+ind.create_inverted_index_in_ram(data2)
+ind.print_posts()
+ind.update_indexer()
+ind.create_inverted_index_in_ram(data4)
+ind.print_posts()
+ind.update_indexer()
+
 #query = ["information","retrieval","and"]
 #ind.top_k_documents(query)
 
