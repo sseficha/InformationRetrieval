@@ -1,7 +1,7 @@
 import pymongo
 from pymongo import MongoClient
 from collections import defaultdict
-
+from numpy import log
 
 class Index:
 
@@ -11,11 +11,12 @@ class Index:
         self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
         self.db = self.cluster["InformationRetrieval"]
         self.collection = self.db["Indexer"]
-        self.di = {}
         self.alist = []
         self.found = []
         self.posts = []
-        # self.collection.delete_many({})
+        self.numberOfCurrentDocumentsToBeUpdated = 0
+        self.collection.delete_many({})
+
     def update_indexer(self):
 
 
@@ -28,7 +29,6 @@ class Index:
         '''
 
         list_of_terms = list(self.collection.find().distinct("_id"))
-
         '''
         Ενημέρωση του ανεστραμμένου καταλόγου
         '''
@@ -37,82 +37,94 @@ class Index:
             term = x.get("_id")
             if term in list_of_terms:
                 list_to_append = x.get("docPos")
+                self.collection.update_one({"_id":term},{"$inc" : {"counter":len(list_to_append)}})
                 for doc in list_to_append:
                     self.collection.update_one({"_id":term},{"$push" :{"docPos":doc}})
             else:
                 list_of_terms.append(term)
                 self.collection.insert_one(x)
 
-        self.di.clear()
+        #update for N of IDF
+        self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.numberOfCurrentDocumentsToBeUpdated}},upsert=True)
+
         self.posts.clear()
         self.alist.clear()
         self.found.clear()
+        self.numberOfCurrentDocumentsToBeUpdated = 0
 
     def create_inverted_index_in_ram(self,data):
-        titles = []
         content = []
         for i, line in enumerate(data):
             if i % 2 == 0:
-                titles.append(line)
+                title = line
             else:
                 content.append(line)
 
         words_in_list = []
         for phrase in content:
-            li = phrase.split(" ")
-            words_in_list.append(li)
+            words_in_list = phrase.split(" ")
+
         # for x in words_in_list:
         #     print(x)
 
-        for i in range(len(titles)):
-            self.di.update({titles[i] : words_in_list[i]})
+
+
         # print(self.di)
         # print("=====================")
         #creation of index ,will put comments later
 
 
-        for title in titles:
-            s = []
-            d = defaultdict(list)
-            for i,word in enumerate(self.di.get(title)):
-                s.append((word,i))
-            for k,v in s:
-                d[k].append(v)
-            self.alist.append(d)
-            for word in(self.di.get(title)):
-                embeddedDict = {
-                    "nameDoc": title,
-                    "tf": len(d.get(word)),
-                    "positions": d.get(word)
-                }
-                if word not in self.found:
-                    post = ({"_id": word,
-                             "counter": 1,
-                             "docPos": [embeddedDict]})
-                    self.posts.append(post)
-                    self.found.append(word)
-                else:
-                    for pos in self.posts:
-                       if pos.get("_id") == word:
-                            namedocs = []
-                            x = pos.get("docPos",{})
-                            for y in x:
-                                namedocs.append(y.get("nameDoc"))
-                            if embeddedDict.get("nameDoc") not in namedocs:
-                                x.append(embeddedDict)
+        s = []
+        d = defaultdict(list)
+        for i,word in enumerate(words_in_list):
+            s.append((word,i))
+        for k,v in s:
+            d[k].append(v)
+        self.alist.append(d)
+        for word in(words_in_list):
+            flag = False
+            embeddedDict = {
+                "nameDoc": title,
+                "tf": len(d.get(word)),
+                "positions": d.get(word)
+            }
+            if word not in self.found:
+                post = ({"_id": word,
+                         "counter": 1,
+                         "docPos": [embeddedDict]})
+                self.posts.append(post)
+                self.found.append(word)
+            else:
+                for pos in self.posts:
+                    if pos.get("_id") == word:
+                        namedocs = []
+                        x = pos.get("docPos", {})
+                        for y in x:
+                            namedocs.append(y.get("nameDoc"))
+                        if embeddedDict.get("nameDoc") not in namedocs:
+                            x.append(embeddedDict)
+                            pos["counter"] += 1
+
+        self.numberOfCurrentDocumentsToBeUpdated += 1
 
     def print_posts(self):
         for x in self.posts:
             print(x)
+
     #top-k (in progress)
     def top_k_documents(self,query):
         C = []
         list_of_terms = list(self.collection.find().distinct("_id"))
+        list_of_terms.remove("NumOfDocumentsInBase")
+        num = self.collection.find({"_id": "NumOfDocumentsInBase"}).distinct("count")
+        N = num[0]
+        print(N)
         for term in query:
             if term in list_of_terms:
-                nt = self.collection.find({"_id":term}).distinct("counter")
-                N = self.collection.count_documents({})
-                print(N)
+                nt = self.collection.find({"_id": term}).distinct("counter")
+                idf = log(N/nt[0])
+                print(idf)
+
 
 with open("document.txt", "r") as doc:
     #different documents
@@ -131,13 +143,15 @@ with open("document4.txt", "r") as doc:
     data4 = doc.readlines()
 
 ind = Index()
+# ind.top_k_documents(["information","need"])
 ind.create_inverted_index_in_ram(data)
 ind.create_inverted_index_in_ram(data3)
+# ind.update_indexer()
 ind.create_inverted_index_in_ram(data2)
-ind.print_posts()
+# ind.print_posts()
 ind.update_indexer()
 ind.create_inverted_index_in_ram(data4)
-ind.print_posts()
+# ind.print_posts()
 ind.update_indexer()
 
 #query = ["information","retrieval","and"]
