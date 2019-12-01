@@ -15,7 +15,7 @@ class Index:
         self.found = []
         self.posts = []
         self.numberOfCurrentDocumentsToBeUpdated = 0
-        self.collection.delete_many({})
+        # self.collection.delete_many({})
 
     def update_indexer(self):
 
@@ -82,7 +82,6 @@ class Index:
             d[k].append(v)
         self.alist.append(d)
         for word in(words_in_list):
-            flag = False
             embeddedDict = {
                 "nameDoc": title,
                 "tf": len(d.get(word)),
@@ -113,18 +112,25 @@ class Index:
 
     #top-k (in progress)
     def top_k_documents(self,query):
-        C = []
+        C = {}
         list_of_terms = list(self.collection.find().distinct("_id"))
         list_of_terms.remove("NumOfDocumentsInBase")
         num = self.collection.find({"_id": "NumOfDocumentsInBase"}).distinct("count")
         N = num[0]
-        print(N)
         for term in query:
             if term in list_of_terms:
                 nt = self.collection.find({"_id": term}).distinct("counter")
                 idf = log(N/nt[0])
-                print(idf)
+                documents = self.collection.find({"_id": term}).distinct("docPos")
+                for docu in documents:
+                    mydoc = docu["nameDoc"]
+                    if mydoc not in C.keys():
+                        C.update({mydoc : 0})
+                    tf = docu["tf"]
+                    x = C.get(mydoc)
+                    C.update({mydoc : x + (tf * idf)})
 
+            #leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
 
 with open("document.txt", "r") as doc:
     #different documents
@@ -143,17 +149,16 @@ with open("document4.txt", "r") as doc:
     data4 = doc.readlines()
 
 ind = Index()
-# ind.top_k_documents(["information","need"])
-ind.create_inverted_index_in_ram(data)
-ind.create_inverted_index_in_ram(data3)
+ind.top_k_documents(["the","ahahahha","and","company"])
+# ind.create_inverted_index_in_ram(data)
+# ind.create_inverted_index_in_ram(data3)
 # ind.update_indexer()
-ind.create_inverted_index_in_ram(data2)
+# ind.create_inverted_index_in_ram(data2)
 # ind.print_posts()
-ind.update_indexer()
-ind.create_inverted_index_in_ram(data4)
+# ind.update_indexer()
+# ind.create_inverted_index_in_ram(data4)
 # ind.print_posts()
-ind.update_indexer()
+# ind.update_indexer()
 
-#query = ["information","retrieval","and"]
-#ind.top_k_documents(query)
+
 
