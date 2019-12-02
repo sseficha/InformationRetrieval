@@ -1,24 +1,46 @@
 import pymongo
+import bisect
+import threading
+import time
 from pymongo import MongoClient
 from numpy import log
+
 
 #updateMiniIndex-> locks only for append
 #updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
-class Index:
+class Index(threading.Thread):
 
     '''Σύνδεση με MongoDB'''
-    # word_queue, word_queue_lock
+
     def __init__(self, word_queue, word_queue_lock):
         self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
         self.db = self.cluster["InformationRetrieval"]
         self.collection = self.db["Indexer"]
+        threading.Thread.__init__(self)
         self.found = []
         self.miniIndex = []
         self.nofExtraDocs = 0
         self.word_queue = word_queue
         self.word_queue_lock = word_queue_lock
         self.collection.delete_many({})
+
+    @staticmethod
+    def binary_search(arr, word):
+        start = 0
+        end = len(arr) - 1
+
+        while start <= end:
+            middle = int((start + end) / 2)
+            midpoint = arr[middle]
+            if str(midpoint) > str(word):
+                end = middle - 1
+            elif str(midpoint) < str(word):
+                start = middle + 1
+            else:
+                return True
+
+        return False
 
     def updateIndex(self):
 
@@ -27,7 +49,7 @@ class Index:
         '''
         Ενημέρωση του ανεστραμμένου καταλόγου
         '''
-        # lock
+        self.word_queue_lock.acquire()
         for post in self.miniIndex:
             term = post.get("_id")
             if term in list_of_terms:
@@ -41,13 +63,14 @@ class Index:
 
         #update for N of IDF
         self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.nofExtraDocs}},upsert=True)
-
+        print("ending")
         self.miniIndex.clear()
         self.found.clear()
         self.nofExtraDocs = 0
-        # lock
+        self.word_queue_lock.release()
 
-    def updateMiniIndex(self):
+    # updateMiniIndex
+    def run(self):
 
         # self.miniIndex
         # acquire
@@ -58,48 +81,65 @@ class Index:
         #acquiree
         #append
         #release
+        while True:
+            #checks if word_queue is empty
+            if not self.word_queue:
+                pass
+            else:
+                self.word_queue_lock.acquire()
+                next = self.word_queue.pop(0)
 
-        #checks if word_queue is empty
-        if not self.word_queue:
-            pass
-        else:
+                title = next.get("link")
+                wordsInList = next.get("words")
+                # {term 1 : tf , term 2 : tf}
+                tfDict = dict((x, wordsInList.count(x)) for x in set(wordsInList))
+                for word in tfDict.keys():
+                    embeddedDict = {
+                        "nameDoc": title,
+                        "tf": tfDict.get(word)
+                    }
+                    # found is a list that stores all words all crawlers sends to miniIndex before each update to db
+                    # binary_search returns true if word exists in found
+                    if not self.binary_search(word, self.found):
+                        miniIndexEntry = ({"_id": word,
+                                           "counter": 1,
+                                           "docPos": [embeddedDict]})
 
-            next = self.word_queue.pop(0)
-            title = next.get("link")
-            wordsInList = next.get("words")
-            # {term 1 : tf , term 2 : tf}
-            tfDict = dict((x, wordsInList.count(x)) for x in set(wordsInList))
-            for word in tfDict.keys():
-                embeddedDict = {
-                    "nameDoc": title,
-                    "tf": tfDict.get(word)
-                }
-                # found is a list that stores all words a crawler sends to miniIndex before each update to db
-                if word not in self.found:          #sorted # future commit
-                    miniIndexEntry = ({"_id": word,
-                                       "counter": 1,
-                                       "docPos": [embeddedDict]})
-                    self.miniIndex.append(miniIndexEntry)
-                    self.found.append(word)
-                else:
-                    for pos in self.miniIndex:
-                        if pos.get("_id") == word:
-                            namedocs = []
-                            x = pos.get("docPos", {})
-                            for y in x:
-                                namedocs.append(y.get("nameDoc"))
-                            if embeddedDict.get("nameDoc") not in namedocs:
-                                x.append(embeddedDict)
-                                pos["counter"] += 1
-            #update N for idf
-            self.nofExtraDocs += 1
+                        self.miniIndex.append(miniIndexEntry)
+                        bisect.insort(self.found, word)
 
-    def print_posts(self):
+                    else:
+                        for pos in self.miniIndex:
+                            if pos.get("_id") == word:
+                                namedocs = []
+                                x = pos.get("docPos", {})
+                                for y in x:
+
+                                    namedocs.append(y.get("nameDoc"))
+
+                                if embeddedDict.get("nameDoc") not in namedocs:
+
+                                    x.append(embeddedDict)
+                                    pos["counter"] += 1
+
+
+
+
+                #update N for idf
+                self.nofExtraDocs += 1
+                self.word_queue_lock.release()
+            print("====================")
+            self.printPosts()
+            time.sleep(5)
+
+    def printPosts(self):
         for x in self.miniIndex:
+            print(x)
+        for x in self.found:
             print(x)
 
     #top-k (slides)
-    def top_k_documents(self,query):
+    def topKDocuments(self,query):
         C = {}
         list_of_terms = list(self.collection.find().distinct("_id"))
         list_of_terms.remove("NumOfDocumentsInBase")
@@ -121,7 +161,7 @@ class Index:
             #leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
 
 
-# ind.top_k_documents(["the","ahahahha","and","company"])
+# ind.topKDocuments(["the","ahahahha","and","company"])
 # ind = Index()
 # ind.updateIndex
 # ind.print_posts()
