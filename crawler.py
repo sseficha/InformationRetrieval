@@ -8,10 +8,10 @@ class Crawler(threading.Thread):
 
     # def __init__(self, page, nof_pages, reset, nof_threads):
 
-    def __init__(self, word_queue, link_queue):
+    def __init__(self, word_queue, link_queue, word_queue_lock):
         threading.Thread.__init__(self)
-        self.word_queue_lock = threading.Lock()
         self.link_queue_lock = threading.Lock()
+        self.word_queue_lock = word_queue_lock
 
         #    self.nof_threads=nof_threads
         #    if reset:
@@ -46,7 +46,7 @@ class Crawler(threading.Thread):
                 self.link_queue_lock.release()
                 extracted_words, extracted_links = html_extractor(link)  # crawl that link
                 self.word_queue_lock.acquire()
-                self.word_queue.append(extracted_words)
+                self.word_queue.append({'link':link,'words': extracted_words})
                 self.word_queue_lock.release()
                 self.link_queue_lock.acquire()
                 [self.link_queue.append(link) for link in extracted_links]
