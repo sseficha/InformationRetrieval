@@ -11,14 +11,19 @@ class Index:
     '''Σύνδεση με MongoDB'''
 
     def __init__(self, word_queue, word_queue_lock):
-        self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
+       # self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
+        #self.cluster = MongoClient("mongodb://localhost:27017/")
+        self.cluster = MongoClient("mongodb+srv://<solon>:<solon123>@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
         self.db = self.cluster["InformationRetrieval"]
         self.collection = self.db["Indexer"]
         self.alist = []
         self.found = []
         self.miniIndex = []
         self.numberOfCurrentDocumentsToBeUpdated = 0
-        # self.collection.delete_many({})
+
+        print(self.db.list_collection_names())
+
+    # self.collection.delete_many({})
 
     def updateIndex(self):
 
@@ -146,32 +151,6 @@ class Index:
 
             #leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
 
-# with open("document.txt", "r") as doc:
-#     #different documents
-#     data = doc.readlines()
-#
-# with open("document2.txt", "r") as doc:
-#     #different documents
-#     data2 = doc.readlines()
-#
-# with open("document3.txt", "r") as doc:
-#     #different documents
-#     data3 = doc.readlines()
-#
-# with open("document4.txt", "r") as doc:
-#     #different documents
-#     data4 = doc.readlines()
-
-#ind.top_k_documents(["the","ahahahha","and","company"])
-# ind.create_inverted_index_in_ram(data)
-# ind.create_inverted_index_in_ram(data3)
-# ind.update_indexer()
-# ind.create_inverted_index_in_ram(data2)
-# ind.print_posts()
-# ind.update_indexer()
-# ind.create_inverted_index_in_ram(data4)
-# ind.print_posts()
-# ind.update_indexer()
 
 
 

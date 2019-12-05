@@ -7,26 +7,31 @@
 </head>
 <body style="display:flex; flex-direction:row; justify-content:center; align-items:flex-start; margin-top: 10px">
     <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-width:75%">
-        <img src="pic.png" style="max-height:100px; min-width:500px; margin-top:-30px">
-        <form action="#" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start">
+        <img src="../static/pic.png" style="max-height:100px; min-width:500px; margin-top:-30px">
+        <form id="form" action="/query" style="display:flex; flex-direction:column; justify-content:center; align-items:flex-start">
             <div>
-                <label for="term">Search:</label>
-                <input type="text" id="term" style="width: 500px">
+                <label for="query">Search:</label>
+                <input type="text" name="query" id="query" style="width: 500px">
             </div>
             <div style="">
-              <label for="number">Number of results:</label>
-              <input value="10" type="text" id="number" style="width:50px">
+              <label for="k">Number of results:</label>
+              <input value="10" type="text" name="k" id="k" style="width:50px">
             </div>
             <input type="submit">
-        <form/>
+        </form>
         <h1 style="margin-top: 50px;">Results</h1>
-        <table id="table">
-            <tr>
-                <th>a</th>
-                <th>b</th>
-                <th>c</th>
-            </tr>
-        </table>
+        <ul>
+        {% for x in data %}
+            <li>{{x.name}}</li>
+        {% endfor %}
+</ul>
+<!--        <table id="table">-->
+<!--            <tr>-->
+<!--                <th>a</th>-->
+<!--                <th>b</th>-->
+<!--                <th>c</th>-->
+<!--            </tr>-->
+<!--        </table>-->
     </div>
 
 
@@ -35,16 +40,19 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
 <script>
-<!--    var table = document.getElementById("table");-->
-<!--    var row = table.insertRow(0);-->
 
-<!--    // Insert new cells (<td> elements) at the 1st and 2nd position of the "new" <tr> element:-->
-<!--    var cell1 = row.insertCell(0);-->
-<!--    var cell2 = row.insertCell(1);-->
+<!--        window.onload = function(data){-->
+<!--            console.log(data)-->
+<!--        }-->
 
-<!--    // Add some text to the new cells:-->
-<!--    cell1.innerHTML = "NEW CELL1";-->
-<!--    cell2.innerHTML = "NEW CELL2";-->
+<!--       window.addEventListener("load",function() {-->
+<!--            document.getElementById('form').addEventListener("submit",function(e) {-->
+<!--                e.preventDefault(); // before the code-->
+<!--                alert('hi');-->
+<!--            });-->
+<!--       });-->
+
+
 </script>
 </body>
 
