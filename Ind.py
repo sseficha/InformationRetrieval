@@ -1,136 +1,123 @@
-import pymongo
+import bisect
+import time
 from pymongo import MongoClient
-from collections import defaultdict
 from numpy import log
 
-#updateMiniIndex-> locks only for append
-#updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
-class Index:
+# updateMiniIndex-> locks only for append
+# updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
-    '''Σύνδεση με MongoDB'''
+class Index():
 
     def __init__(self, word_queue, word_queue_lock):
-       # self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
-        #self.cluster = MongoClient("mongodb://localhost:27017/")
-        self.cluster = MongoClient("mongodb+srv://<solon>:<solon123>@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
+        self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
         self.db = self.cluster["InformationRetrieval"]
         self.collection = self.db["Indexer"]
-        self.alist = []
-        self.found = []
         self.miniIndex = []
-        self.numberOfCurrentDocumentsToBeUpdated = 0
-
-        print(self.db.list_collection_names())
-
-    # self.collection.delete_many({})
+        self.numOfDocsToBeAdded = 0
+        self.word_queue = word_queue
+        # self.collection.delete_many({})
 
     def updateIndex(self):
 
-
-
-
-        '''
-        Paramater:
-        -----------------------------------------
-        list_of_terms : κάθε φορα που τρέχει το πρόγραμμα τραβάει από τη βάση όλους τους όρους και τους αποθηκεύει στη list_of_terms
-        '''
-
-        list_of_terms = list(self.collection.find().distinct("_id"))
-        '''
-        Ενημέρωση του ανεστραμμένου καταλόγου
-        '''
-
-        for x in to_be_updated: #allagi
-            term = x.get("_id")
-            if term in list_of_terms:
-                list_to_append = x.get("docPos")
-                self.collection.update_one({"_id":term},{"$inc" : {"counter":len(list_to_append)}})
-                for doc in list_to_append:
-                    self.collection.update_one({"_id":term},{"$push" :{"docPos":doc}})
+        start = time.time()
+        for termObject in self.miniIndex:
+            term = termObject.get("_id")
+            if self.collection.find_one({"_id": term}) is not None:
+                DocsWithTf = termObject.get("nameTf")
+                self.collection.update_one({"_id": term}, {"$inc": {"sumOfDocuments": len(DocsWithTf)}})
+                for document in DocsWithTf:
+                    self.collection.update_one({"_id": term}, {"$push": {"nameTf": document}})
             else:
-                list_of_terms.append(term)
-                self.collection.insert_one(x)
+                self.collection.insert_one(termObject)
 
-        #update for N of IDF
-        self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.numberOfCurrentDocumentsToBeUpdated}},upsert=True)
+        # update the number of different documents(links) in collection
+        self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.numOfDocsToBeAdded}},
+                                   upsert=True)
+        print(time.time() - start)
 
-        self.posts.clear()
-        self.alist.clear()
-        self.found.clear()
-        self.numberOfCurrentDocumentsToBeUpdated = 0
+        # setup for next call of updateMiniIndex
+        self.miniIndex.clear()
+        self.numOfDocsToBeAdded = 0
+
+    # creates an object for each word that represents :
+    # 1) name of a document a word is contained
+    # 2) the word frequency in that document
+    def createEmbeddedObject(self, nameOfDocument, tf):
+
+        embeddedObject = {
+            "name": nameOfDocument,
+            "tf": tf
+        }
+        return embeddedObject
+
+    # creates and pushes a new miniIndex entry to miniIndex
+    def createMiniIndexEntry(self, word, embeddedObject):
+
+        miniIndexEntry = ({"_id": word,
+                           "sumOfDocuments": 1,
+                           "nameTf": [embeddedObject]})
+
+        self.miniIndex.append(miniIndexEntry)
+
+    # updates a term that already exists in miniIndex
+    def updateMiniIndexEntry(self, termObject, embObj):
+
+        # documentNames = [document1, document2, ...]
+        documentNames = []
+
+        # namesAntTfs structure = {document1 : tf, document2 : tf, ...}
+        namesAndTfs = termObject.get("nameTf", {})
+
+        for item in namesAndTfs:
+            documentNames.append(item.get("name"))
+
+        # if a word is in the same document more than once, there is no need for update,
+        # because embeddedObject already holds all the info for a word in a document
+        if embObj.get("name") not in documentNames:
+            namesAndTfs.append(embObj)
+            termObject["sumOfDocuments"] += 1
 
     def updateMiniIndex(self):
 
-        # self.miniIndex
-        # acquire
-        # item=pop(0) from word_queue  item['link']->string item['words']->array of words
-        # release
-        #for in words
-        #search in mini_index
-        #acquiree
-        #append
-        #release
+        # checks if word_queue is empty
+        if not self.word_queue:
+            pass
+        else:
+            nextEntry = self.word_queue.pop(0)
+            title = nextEntry.get("link")
+            theWords = nextEntry.get("words")
 
-        content = []
-        for i, line in enumerate(data):
-            if i % 2 == 0:
-                title = line
-            else:
-                content.append(line)
+            # {term 1 : tf , term 2 : tf}
+            tfDict = dict((x, theWords.count(x)) for x in set(theWords))
 
-        words_in_list = []
-        for phrase in content:      #pop from word_queue
-            words_in_list = phrase.split(" ")
+            # for each word in a document
+            for word in tfDict.keys():
 
-        # for x in words_in_list:
-        #     print(x)
+                embObj = self.createEmbeddedObject(title, tfDict.get(word))
 
+                # checks if the word is already in miniIndex or miniIndex is empty (for the first word only)
+                if word not in [self.miniIndex[i]["_id"] for i in range(len(self.miniIndex))] or not self.miniIndex:
 
+                    self.createMiniIndexEntry(word, embObj)
 
-        # print(self.di)
-        # print("=====================")
-        #creation of index ,will put comments later
+                else:
+                    for termObject in self.miniIndex:          # maybe there is a different implementation
+                        if termObject.get("_id") == word:
+                            self.updateMiniIndexEntry(termObject, embObj)
+                            break
 
+            # update N for idf
+            self.numOfDocsToBeAdded += 1
 
-        s = []
-        d = defaultdict(list)
-        for i,word in enumerate(words_in_list):
-            s.append((word,i))
-        for k,v in s:
-            d[k].append(v)
-        self.alist.append(d)
-        for word in(words_in_list):
-            embeddedDict = {
-                "nameDoc": title,
-                "tf": len(d.get(word)),
-                "positions": d.get(word)
-            }
-            if word not in self.found:          #sorted
-                post = ({"_id": word,
-                         "counter": 1,
-                         "docPos": [embeddedDict]})
-                self.posts.append(post)
-                self.found.append(word)
-            else:
-                for pos in self.posts:
-                    if pos.get("_id") == word:
-                        namedocs = []
-                        x = pos.get("docPos", {})
-                        for y in x:
-                            namedocs.append(y.get("nameDoc"))
-                        if embeddedDict.get("nameDoc") not in namedocs:
-                            x.append(embeddedDict)
-                            pos["counter"] += 1
-
-        self.numberOfCurrentDocumentsToBeUpdated += 1
-
-    def print_posts(self):
-        for x in self.posts:
+    def printMiniIndex(self):
+        for x in self.miniIndex:
             print(x)
 
-    #top-k (in progress)
-    def top_k_documents(self,query):
+
+    # top-k slides, not changed
+
+    def topKDocuments(self, query):
         C = {}
         list_of_terms = list(self.collection.find().distinct("_id"))
         list_of_terms.remove("NumOfDocumentsInBase")
@@ -138,19 +125,17 @@ class Index:
         N = num[0]
         for term in query:
             if term in list_of_terms:
-                nt = self.collection.find({"_id": term}).distinct("counter")
-                idf = log(N/nt[0])
-                documents = self.collection.find({"_id": term}).distinct("docPos")
+                nt = self.collection.find({"_id": term}).distinct("sumOfDocuments")
+                idf = log(N / nt[0])  # N*nt
+                documents = self.collection.find({"_id": term}).distinct("nameTf")
                 for docu in documents:
-                    mydoc = docu["nameDoc"]
+                    mydoc = docu["name"]
                     if mydoc not in C.keys():
-                        C.update({mydoc : 0})
+                        C.update({mydoc: 0})
                     tf = docu["tf"]
                     x = C.get(mydoc)
                     C.update({mydoc : x + (tf * idf)})
 
             #leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
-
-
 
 
