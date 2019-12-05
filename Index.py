@@ -2,21 +2,26 @@ import bisect
 import time
 from pymongo import MongoClient
 from numpy import log
+import threading
 
 
 # updateMiniIndex-> locks only for append
 # updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
-class Index():
+class Index(threading.Thread):
 
     def __init__(self, word_queue, word_queue_lock):
-        self.cluster = MongoClient("mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
+        threading.Thread.__init__(self)
+        self.cluster = MongoClient(
+            "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
         self.db = self.cluster["InformationRetrieval"]
         self.collection = self.db["Indexer"]
         self.miniIndex = []
-        self.numOfDocsToBeAdded = 0
+        self.nofDocs = 0  # tha to pairnoume apo to lengh tou hashmap
         self.word_queue = word_queue
-        # self.collection.delete_many({})
+        self.word_queue_lock = word_queue_lock
+
+        self.collection.delete_many({})
 
     def updateIndex(self):
 
@@ -32,13 +37,13 @@ class Index():
                 self.collection.insert_one(termObject)
 
         # update the number of different documents(links) in collection
-        self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.numOfDocsToBeAdded}},
+        self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.nofDocs}},
                                    upsert=True)
         print(time.time() - start)
 
         # setup for next call of updateMiniIndex
         self.miniIndex.clear()
-        self.numOfDocsToBeAdded = 0
+        self.nofDocs = 0
 
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
@@ -82,14 +87,14 @@ class Index():
 
         # checks if word_queue is empty
         if not self.word_queue:
-            pass
+            time.sleep(0.5)
         else:
             nextEntry = self.word_queue.pop(0)
             title = nextEntry.get("link")
-            theWords = nextEntry.get("words")
+            words = nextEntry.get("words")
 
             # {term 1 : tf , term 2 : tf}
-            tfDict = dict((x, theWords.count(x)) for x in set(theWords))
+            tfDict = dict((x, words.count(x)) for x in set(words))
 
             # for each word in a document
             for word in tfDict.keys():
@@ -102,31 +107,40 @@ class Index():
                     self.createMiniIndexEntry(word, embObj)
 
                 else:
-                    for termObject in self.miniIndex:          # maybe there is a different implementation
+                    for termObject in self.miniIndex:  # maybe there is a different implementation
                         if termObject.get("_id") == word:
                             self.updateMiniIndexEntry(termObject, embObj)
                             break
 
             # update N for idf
-            self.numOfDocsToBeAdded += 1
+            self.nofDocs += 1
 
     def printMiniIndex(self):
         for x in self.miniIndex:
             print(x)
 
+    def run(self):
+        time.sleep(3)
+        while self.nofDocs<3:
+            self.updateMiniIndex()
+            # if not self.word_queue:
+        print("Start updating Index")
+        self.updateIndex()
 
     # top-k slides, not changed
 
     def topKDocuments(self, query):
         C = {}
         list_of_terms = list(self.collection.find().distinct("_id"))
-        list_of_terms.remove("NumOfDocumentsInBase")
-        num = self.collection.find({"_id": "NumOfDocumentsInBase"}).distinct("count")
-        N = num[0]
+        # list_of_terms.remove("NumOfDocumentsInBase")
+        #num = self.collection.find({"_id": "NumOfDocumentsInBase"}).distinct("count")
+        #N = num[0]
+        N=4
         for term in query:
             if term in list_of_terms:
                 nt = self.collection.find({"_id": term}).distinct("sumOfDocuments")
                 idf = log(N / nt[0])  # N*nt
+                #idf = N / nt[0]
                 documents = self.collection.find({"_id": term}).distinct("nameTf")
                 for docu in documents:
                     mydoc = docu["name"]
@@ -134,8 +148,7 @@ class Index():
                         C.update({mydoc: 0})
                     tf = docu["tf"]
                     x = C.get(mydoc)
-                    C.update({mydoc : x + (tf * idf)})
+                    C.update({mydoc: x + (tf * idf)})
+        print(C.items())
 
-            #leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
-
-
+            # leipei kanonikopoihsh sth monada ousiastika ti einai to Ld

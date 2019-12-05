@@ -34,7 +34,8 @@ class Crawler(threading.Thread):
         self.link_queue.append(url)
 
     def run(self):
-        while Crawler.nof_pages >= 0:
+        while Crawler.nof_pages > 0:
+
 
             if len(self.link_queue) == 0:
                 time.sleep(0.5)
@@ -66,4 +67,5 @@ class Crawler(threading.Thread):
 
             # send them for processing at index
             Crawler.decrement_page_number()
-            time.sleep(5)
+            time.sleep(3)
+            print(Crawler.nof_pages)
