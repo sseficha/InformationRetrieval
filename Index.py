@@ -195,7 +195,7 @@ class Index(threading.Thread):
         print('End of Index run!!!!')
 
     # top-k slides, not changed
-
+    # not ready yet
     def topkDocuments(query):
         C = {}
         N = Index.documentsCollection.find().count()
