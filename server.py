@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify
-import os
+from Index import Index
 from flask import request
 
 
@@ -15,7 +15,10 @@ def query_process():
     query = request.args.get('query')
     k = request.args.get('k')
     query = query.split(' ')
+    results = Index.topkDocuments(query)
+    print(results)
     #send query
+
     return render_template('google.html', data=[{'name':'aaa'}, {'name':'bbb'}])
 
 

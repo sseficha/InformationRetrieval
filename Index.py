@@ -9,40 +9,69 @@ import threading
 # updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
 class Index(threading.Thread):
+    cluster = MongoClient(
+        "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
+    db = cluster["InformationRetrieval"]
+    collection = db["Indexer"]
+    nof_pages = 0
+    mini_size = 0
+    mini_count = 0
+    miniIndex = []
+    word_queue = []
+    word_queue_lock = None
 
-    def __init__(self, word_queue, word_queue_lock):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.cluster = MongoClient(
-            "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
-        self.db = self.cluster["InformationRetrieval"]
-        self.collection = self.db["Indexer"]
-        self.miniIndex = []
-        self.nofDocs = 0  # tha to pairnoume apo to lengh tou hashmap
-        self.word_queue = word_queue
-        self.word_queue_lock = word_queue_lock
 
-        self.collection.delete_many({})
+        self.nofDocs = 0  # des ti tha valeis edo gia tin ora pernaei panta 0
+
+
+
+    @staticmethod
+    def clear():
+        Index.collection.delete_many({})
+
+    @staticmethod
+    def set_page_number(n):
+        Index.nof_pages = n
+
+    @staticmethod
+    def set_mini_size(n):
+        Index.mini_size = n
+        Index.mini_count = n
+
+    @staticmethod
+    def set_word_queue(w_queue):
+        Index.word_queue = w_queue
+
+    @staticmethod
+    def set_word_queue_lock(lock):
+        Index.word_queue_lock = lock
+
+    @staticmethod
+    def set_mini_index(index):
+        Index.miniIndex = index
 
     def updateIndex(self):
 
         start = time.time()
-        for termObject in self.miniIndex:
+        for termObject in Index.miniIndex:
             term = termObject.get("_id")
-            if self.collection.find_one({"_id": term}) is not None:
+            if Index.collection.find_one({"_id": term}) is not None:
                 DocsWithTf = termObject.get("nameTf")
-                self.collection.update_one({"_id": term}, {"$inc": {"sumOfDocuments": len(DocsWithTf)}})
+                Index.collection.update_one({"_id": term}, {"$inc": {"sumOfDocuments": len(DocsWithTf)}})
                 for document in DocsWithTf:
-                    self.collection.update_one({"_id": term}, {"$push": {"nameTf": document}})
+                    Index.collection.update_one({"_id": term}, {"$push": {"nameTf": document}})
             else:
-                self.collection.insert_one(termObject)
+                Index.collection.insert_one(termObject)
 
         # update the number of different documents(links) in collection
-        self.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.nofDocs}},
+        Index.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.nofDocs}},
                                    upsert=True)
         print(time.time() - start)
 
         # setup for next call of updateMiniIndex
-        self.miniIndex.clear()
+        Index.miniIndex.clear()
         self.nofDocs = 0
 
     # creates an object for each word that represents :
@@ -63,7 +92,7 @@ class Index(threading.Thread):
                            "sumOfDocuments": 1,
                            "nameTf": [embeddedObject]})
 
-        self.miniIndex.append(miniIndexEntry)
+        Index.miniIndex.append(miniIndexEntry)
 
     # updates a term that already exists in miniIndex
     def updateMiniIndexEntry(self, termObject, embObj):
@@ -86,10 +115,15 @@ class Index(threading.Thread):
     def updateMiniIndex(self):
 
         # checks if word_queue is empty
-        if not self.word_queue:
+        if not Index.word_queue:
             time.sleep(0.5)
         else:
-            nextEntry = self.word_queue.pop(0)
+            Index.nof_pages -= 1
+            Index.mini_count -= 1
+            #+lock!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            Index.word_queue_lock.acquire()
+            nextEntry = Index.word_queue.pop(0)
+            Index.word_queue_lock.release()
             title = nextEntry.get("link")
             words = nextEntry.get("words")
 
@@ -102,46 +136,50 @@ class Index(threading.Thread):
                 embObj = self.createEmbeddedObject(title, tfDict.get(word))
 
                 # checks if the word is already in miniIndex or miniIndex is empty (for the first word only)
-                if word not in [self.miniIndex[i]["_id"] for i in range(len(self.miniIndex))] or not self.miniIndex:
+                if word not in [Index.miniIndex[i]["_id"] for i in range(len(Index.miniIndex))] or not Index.miniIndex:
 
                     self.createMiniIndexEntry(word, embObj)
 
                 else:
-                    for termObject in self.miniIndex:  # maybe there is a different implementation
+                    for termObject in Index.miniIndex:  # maybe there is a different implementation
                         if termObject.get("_id") == word:
                             self.updateMiniIndexEntry(termObject, embObj)
                             break
 
             # update N for idf
-            self.nofDocs += 1
+
 
     def printMiniIndex(self):
-        for x in self.miniIndex:
+        for x in Index.miniIndex:
             print(x)
 
     def run(self):
         time.sleep(3)
-        while self.nofDocs<3:
-            self.updateMiniIndex()
+        while Index.nof_pages > 0:
+            while Index.mini_count > 0:
+                print(Index.mini_count)
+                self.updateMiniIndex()
+            Index.mini_count = Index.mini_size
             # if not self.word_queue:
-        print("Start updating Index")
-        self.updateIndex()
+            print("Start updating Index")
+            self.updateIndex()
+        print('End of Index run!!!!')
 
     # top-k slides, not changed
 
-    def topKDocuments(self, query):
+    def topkDocuments(query):
         C = {}
-        list_of_terms = list(self.collection.find().distinct("_id"))
+        list_of_terms = list(Index.collection.find().distinct("_id"))
         # list_of_terms.remove("NumOfDocumentsInBase")
         #num = self.collection.find({"_id": "NumOfDocumentsInBase"}).distinct("count")
         #N = num[0]
         N=4
         for term in query:
             if term in list_of_terms:
-                nt = self.collection.find({"_id": term}).distinct("sumOfDocuments")
+                nt = Index.collection.find({"_id": term}).distinct("sumOfDocuments")
                 idf = log(N / nt[0])  # N*nt
                 #idf = N / nt[0]
-                documents = self.collection.find({"_id": term}).distinct("nameTf")
+                documents = Index.collection.find({"_id": term}).distinct("nameTf")
                 for docu in documents:
                     mydoc = docu["name"]
                     if mydoc not in C.keys():
@@ -149,6 +187,7 @@ class Index(threading.Thread):
                     tf = docu["tf"]
                     x = C.get(mydoc)
                     C.update({mydoc: x + (tf * idf)})
-        print(C.items())
+        print(C)
+        return C
 
             # leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
