@@ -1,8 +1,25 @@
-import bisect
+import pymongo
 import time
 from pymongo import MongoClient
 from numpy import log
 import threading
+
+
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⣀⣤⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣤⣀⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀
+# ⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀
+# ⠀⠀⢠⣿⡿⠿⠿⠿⠿⠿⠿⠿⣿⠿⠿⠿⠿⠿⠿⢿⣿⣿⣿⠿⠿⢿⣿⡄⠀⠀
+# ⠀⢀⣿⣿⡇⠀⠀⣠⣤⣄⣀⣠⣿⠀⠀⢀⣤⣀⡀⠀⠘⣿⣿⠀⠀⢸⣿⣿⡀⠀
+# ⠀⢸⣿⣿⡇⠀⠀⣿⣿⣿⣿⣿⣿⠀⠀⢸⣿⣿⠟⠀⠀⣿⣿⠀⠀⢸⣿⣿⡇⠀
+# ⠀⢸⣿⣿⡇⠀⠀⠀⠀⠀⠀⢸⣿⠀⠀⠀⠀⠀⠀⠀⠺⣿⣿⣿ ⠀ ⢸⣿⣿⡧⠀
+# ⠀⢸⣿⣿⡇⠀⠀⣿⣿⣿⣿⣿⣿⠀⠀⢸⣿⣿⣿⠀⠀⢹⣿⠀⠀⢸⣿⣿⡇⠀ Locks sto mini index
+# ⠀⠈⣿⣿⡇⠀⠀⣿⣿⣿⣿⣿⣿⠀⠀⠈⠛⠛⠉⠀⢀⣾⣿⠀⠀⢸⣿⣿⠃⠀
+# ⠀⠀⠸⣿⣷⣶⣶⣿⣿⣿⣿⣿⣿⣶⣶⣶⣶⣶⣶⣾⣿⣿⣿⣶⣶⣾⣿⠇⠀⠀
+# ⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠙⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠙⠛⠛⠋⠉⠉⠀⠀⠀⠀⠀⠀
 
 
 # updateMiniIndex-> locks only for append
@@ -13,6 +30,7 @@ class Index(threading.Thread):
         "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
     db = cluster["InformationRetrieval"]
     collection = db["Indexer"]
+    documentsCollection = db["Documents"]
     nof_pages = 0
     mini_size = 0
     mini_count = 0
@@ -23,13 +41,11 @@ class Index(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
 
-        self.nofDocs = 0  # des ti tha valeis edo gia tin ora pernaei panta 0
-
-
 
     @staticmethod
     def clear():
         Index.collection.delete_many({})
+        Index.documentsCollection.delete_many({})
 
     @staticmethod
     def set_page_number(n):
@@ -57,22 +73,16 @@ class Index(threading.Thread):
         start = time.time()
         for termObject in Index.miniIndex:
             term = termObject.get("_id")
-            if Index.collection.find_one({"_id": term}) is not None:
-                DocsWithTf = termObject.get("nameTf")
-                Index.collection.update_one({"_id": term}, {"$inc": {"sumOfDocuments": len(DocsWithTf)}})
-                for document in DocsWithTf:
-                    Index.collection.update_one({"_id": term}, {"$push": {"nameTf": document}})
-            else:
-                Index.collection.insert_one(termObject)
-
-        # update the number of different documents(links) in collection
-        Index.collection.update_one({"_id": "NumOfDocumentsInBase"}, {"$inc": {"count": self.nofDocs}},
-                                   upsert=True)
+            DocsWithTf = termObject.get("nameTf")
+            Index.collection.find_one_and_update(
+                {"_id": term},
+                {"$inc" : {"sumOfDocuments": len(DocsWithTf)},"$push" : {"nameTf" : {"$each" : DocsWithTf }}},
+                upsert = True
+            )
         print(time.time() - start)
 
         # setup for next call of updateMiniIndex
         Index.miniIndex.clear()
-        self.nofDocs = 0
 
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
@@ -89,7 +99,7 @@ class Index(threading.Thread):
     def createMiniIndexEntry(self, word, embeddedObject):
 
         miniIndexEntry = ({"_id": word,
-                           "sumOfDocuments": 1,
+                           "sumOfDocuments": 1,   # nomizw einai perito pleon auto alla vlepoume
                            "nameTf": [embeddedObject]})
 
         Index.miniIndex.append(miniIndexEntry)
@@ -112,6 +122,22 @@ class Index(threading.Thread):
             namesAndTfs.append(embObj)
             termObject["sumOfDocuments"] += 1
 
+    # ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    # ⠀⠀⠀⠀⠀⠀⠀⣀⣤⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣤⣀⠀⠀⠀⠀⠀⠀⠀
+    # ⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀
+    # ⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀
+    # ⠀⠀⢠⣿⡿⠿⠿⠿⠿⠿⠿⠿⣿⠿⠿⠿⠿⠿⠿⢿⣿⣿⣿⠿⠿⢿⣿⡄⠀⠀
+    # ⠀⢀⣿⣿⡇⠀⠀⣠⣤⣄⣀⣠⣿⠀⠀⢀⣤⣀⡀⠀⠘⣿⣿⠀⠀⢸⣿⣿⡀⠀
+    # ⠀⢸⣿⣿⡇⠀⠀⣿⣿⣿⣿⣿⣿⠀⠀⢸⣿⣿⠟⠀⠀⣿⣿⠀⠀⢸⣿⣿⡇⠀
+    # ⠀⢸⣿⣿⡇⠀⠀⠀⠀⠀⠀⢸⣿⠀⠀⠀⠀⠀⠀⠀⠺⣿⣿⣿ ⠀⠀⣿⣿⡧⠀
+    # ⠀⢸⣿⣿⡇⠀⠀⣿⣿⣿⣿⣿⣿⠀⠀⢸⣿⣿⣿⠀⠀⢹⣿⠀⠀⢸⣿⣿⡇⠀ Locks sto mini index
+    # ⠀⠈⣿⣿⡇⠀⠀⣿⣿⣿⣿⣿⣿⠀⠀⠈⠛⠛⠉⠀⢀⣾⣿⠀⠀⢸⣿⣿⠃⠀
+    # ⠀⠀⠸⣿⣷⣶⣶⣿⣿⣿⣿⣿⣿⣶⣶⣶⣶⣶⣶⣾⣿⣿⣿⣶⣶⣾⣿⠇⠀⠀
+    # ⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀
+    # ⠀⠀⠀⠀⠀⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀
+    # ⠀⠀⠀⠀⠀⠀⠀⠙⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀
+    # ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠙⠛⠛⠋⠉⠉⠀⠀⠀⠀⠀⠀
+
     def updateMiniIndex(self):
 
         # checks if word_queue is empty
@@ -126,6 +152,11 @@ class Index(threading.Thread):
             Index.word_queue_lock.release()
             title = nextEntry.get("link")
             words = nextEntry.get("words")
+            Td = {
+                "_id" : title,
+                "Td" : len(words)
+            }
+            Index.documentsCollection.insert_one(Td)
 
             # {term 1 : tf , term 2 : tf}
             tfDict = dict((x, words.count(x)) for x in set(words))
@@ -145,8 +176,6 @@ class Index(threading.Thread):
                         if termObject.get("_id") == word:
                             self.updateMiniIndexEntry(termObject, embObj)
                             break
-
-            # update N for idf
 
 
     def printMiniIndex(self):
@@ -169,13 +198,9 @@ class Index(threading.Thread):
 
     def topkDocuments(query):
         C = {}
-        list_of_terms = list(Index.collection.find().distinct("_id"))
-        # list_of_terms.remove("NumOfDocumentsInBase")
-        #num = self.collection.find({"_id": "NumOfDocumentsInBase"}).distinct("count")
-        #N = num[0]
-        N=4
+        N = Index.documentsCollection.find().count()
         for term in query:
-            if term in list_of_terms:
+            if Index.collection.find_one({"_id": term}) is not None:
                 nt = Index.collection.find({"_id": term}).distinct("sumOfDocuments")
                 idf = log(N / nt[0])  # N*nt
                 #idf = N / nt[0]
@@ -183,10 +208,10 @@ class Index(threading.Thread):
                 for docu in documents:
                     mydoc = docu["name"]
                     if mydoc not in C.keys():
-                        C.update({mydoc: 0})
+                        C.update({"name" : mydoc, "value" : 0})
                     tf = docu["tf"]
-                    x = C.get(mydoc)
-                    C.update({mydoc: x + (tf * idf)})
+                    x = C.get("value")
+                    C.update({"value": x + (tf * idf)})
         print(C)
         return C
 
