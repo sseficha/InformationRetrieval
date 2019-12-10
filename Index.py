@@ -68,22 +68,6 @@ class Index(threading.Thread):
     def set_mini_index(index):
         Index.miniIndex = index
 
-    def updateIndex(self):
-
-        start = time.time()
-        for termObject in Index.miniIndex:
-            term = termObject.get("_id")
-            DocsWithTf = termObject.get("nameTf")
-            Index.collection.find_one_and_update(
-                {"_id": term},
-                {"$inc" : {"sumOfDocuments": len(DocsWithTf)},"$push" : {"nameTf" : {"$each" : DocsWithTf }}},
-                upsert = True
-            )
-        print(time.time() - start)
-
-        # setup for next call of updateMiniIndex
-        Index.miniIndex.clear()
-
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
     # 2) the word frequency in that document
@@ -115,6 +99,7 @@ class Index(threading.Thread):
 
         for item in namesAndTfs:
             documentNames.append(item.get("name"))
+
 
         # if a word is in the same document more than once, there is no need for update,
         # because embeddedObject already holds all the info for a word in a document
@@ -150,6 +135,8 @@ class Index(threading.Thread):
             Index.word_queue_lock.acquire()
             nextEntry = Index.word_queue.pop(0)
             Index.word_queue_lock.release()
+            print("===========================================================")
+            print(nextEntry)
             title = nextEntry.get("link")
             words = nextEntry.get("words")
             Td = {
@@ -163,18 +150,21 @@ class Index(threading.Thread):
 
             # for each word in a document
             for word in tfDict.keys():
-
+                Index.word_queue_lock.acquire()
                 embObj = self.createEmbeddedObject(title, tfDict.get(word))
-
+                Index.word_queue_lock.release()
                 # checks if the word is already in miniIndex or miniIndex is empty (for the first word only)
                 if word not in [Index.miniIndex[i]["_id"] for i in range(len(Index.miniIndex))] or not Index.miniIndex:
-
+                    Index.word_queue_lock.acquire()
                     self.createMiniIndexEntry(word, embObj)
+                    Index.word_queue_lock.release()
 
                 else:
-                    for termObject in Index.miniIndex: 
+                    for termObject in Index.miniIndex:
                         if termObject.get("_id") == word:
+                            Index.word_queue_lock.acquire()
                             self.updateMiniIndexEntry(termObject, embObj)
+                            Index.word_queue_lock.release()
                             break
 
 
@@ -190,9 +180,9 @@ class Index(threading.Thread):
                 self.updateMiniIndex()
             Index.mini_count = Index.mini_size
             # if not self.word_queue:
-            print("Start updating Index")
-            self.updateIndex()
-        print('End of Index run!!!!')
+        #     print("Start updating Index")
+        #     self.updateIndex()
+        # print('End of Index run!!!!')
         # C = {}
         # N = Index.documentsCollection.find().count()
 
