@@ -2,13 +2,15 @@ import threading
 import time
 from Index import Index
 from crawler import Crawler
+from miniIndexPuller import miniIndexPuller
+from miniIndexPusher import miniIndexPusher
 import sys
 
-#python main.py sample1.html 4 1 2 trexto etsi
+# python main.py sample1.html 4 1 2 trexto etsi
 
 
 
-End = time.time() + 30
+
 
 
 link = sys.argv[1]
@@ -20,6 +22,7 @@ word_queue = []
 link_queue = []
 word_queue_lock = threading.Lock()
 link_queue_lock = threading.Lock()
+mini_index_queue_lock = threading.Lock()
 
 #Crawler.set_page_number(4)
 
@@ -29,6 +32,7 @@ for i in range(0, nof_threads):
     crawler_list.append(Crawler())
 
 Crawler.set_page_number(nof_pages)
+#PULLER set documents max gia na stamataei tha paei panw
 Crawler.addQueues(word_queue, link_queue)
 Crawler.addLocks(word_queue_lock, link_queue_lock)
 Crawler.addLink(link)
@@ -59,16 +63,22 @@ for crawler in crawler_list:
 #    empty Index
 
 miniIndex = []
-index1 = Index()
+pusher1 = miniIndexPusher()
+puller1 = miniIndexPuller()
+
+Index.set_document_number(nof_pages)
 Index.set_word_queue(word_queue)
-Index.set_word_queue_lock(word_queue_lock)
+Index.set_locks(word_queue_lock,mini_index_queue_lock)
 Index.set_mini_index(miniIndex)
 Index.set_page_number(nof_pages)
 #Index.set_page_number(4)
 Index.set_mini_size(2)
 if reset:
     Index.clear()
-index1.start()
+pusher1.start()
+puller1.start()
+
+
 
 
 
