@@ -49,7 +49,8 @@ class Index(threading.Thread):
         Index.miniIndex = index
 
     # top-k
-    def topkDocuments(self, query):
+    @staticmethod
+    def topkDocuments(query):
         start = time.time()
         print(start)
         C = []

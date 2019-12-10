@@ -19,7 +19,7 @@ def query_process():
     print(results)
     #send query
 
-    return render_template('google.html', data=[{'name':'aaa'}, {'name':'bbb'}])
+    return render_template('google.html', data=results)
 
 
 app.run(debug=True)
