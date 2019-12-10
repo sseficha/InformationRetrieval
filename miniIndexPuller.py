@@ -9,23 +9,23 @@ from Index import Index
 # updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
 class miniIndexPuller(Index, threading.Thread):
-
+    nof_pages = 0
     def __init__(self):
-        super().__init__()
+        Index().__init__()
         threading.Thread.__init__(self)
 
 
     def updateIndex(self):
 
-        if not miniIndexPuller.miniIndex:
+        if not Index.miniIndex:
             time.sleep(1)
         else:
-            miniIndexPuller.nof_documents -=1
+            Index.nof_pages -= 1
             start = time.time()
-            termObject = miniIndexPuller.miniIndex.pop(0)
+            termObject = Index.miniIndex.pop(0)
             term = termObject.get("_id")
             DocsWithTf = termObject.get("nameTf")
-            miniIndexPuller.collection.find_one_and_update(
+            Index.collection.find_one_and_update(
                 {"_id": term},
                 {"$inc" : {"sumOfDocuments": len(DocsWithTf)},"$push" : {"nameTf" : {"$each" : DocsWithTf }}},
                 upsert = True
@@ -36,7 +36,7 @@ class miniIndexPuller(Index, threading.Thread):
 
 
     def run(self):
-        while miniIndexPuller.nof_documents > 0:
+        while Index.nof_pages  > 0:
             print("Start updating Index")
             self.updateIndex()
             print('End of Index run!!!!')

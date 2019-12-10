@@ -6,9 +6,10 @@ import threading
 from Index import Index
 
 class miniIndexPusher (Index,threading.Thread):
+    nof_pages = 0
 
     def __init__(self):
-        super().__init__()
+        Index().__init__()
 
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
@@ -28,7 +29,7 @@ class miniIndexPusher (Index,threading.Thread):
                            "sumOfDocuments": 1,  # nomizw einai perito pleon auto alla vlepoume
                            "nameTf": [embeddedObject]})
 
-        miniIndexPusher.miniIndex.append(miniIndexEntry)
+        Index.miniIndex.append(miniIndexEntry)
 
     # updates a term that already exists in miniIndex
     def updateMiniIndexEntry(self, termObject, embObj):
@@ -52,15 +53,15 @@ class miniIndexPusher (Index,threading.Thread):
     def updateMiniIndex(self):
 
         # checks if word_queue is empty
-        if not miniIndexPusher.word_queue:
+        if not Index.word_queue:
             time.sleep(0.5)
         else:
-            miniIndexPusher.nof_pages -= 1
-            miniIndexPusher.mini_count -= 1
+            Index.nof_pages -= 1
+            Index.mini_count -= 1
             # +lock!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            miniIndexPusher.word_queue_lock.acquire()
-            nextEntry = miniIndexPusher.word_queue.pop(0)
-            miniIndexPusher.word_queue_lock.release()
+            Index.word_queue_lock.acquire()
+            nextEntry = Index.word_queue.pop(0)
+            Index.word_queue_lock.release()
             print("===========================================================")
             print(nextEntry)
             title = nextEntry.get("link")
@@ -69,7 +70,7 @@ class miniIndexPusher (Index,threading.Thread):
                 "_id": title,
                 "Td": len(words)  #allagi
             }
-            miniIndexPusher.documentsCollection.insert_one(Td)
+            Index.documentsCollection.insert_one(Td)
 
             # {term 1 : tf , term 2 : tf}
             tfDict = dict((x, words.count(x)) for x in set(words))
@@ -80,26 +81,26 @@ class miniIndexPusher (Index,threading.Thread):
                 embObj = self.createEmbeddedObject(title, tfDict.get(word))
 
                 # checks if the word is already in miniIndex or miniIndex is empty (for the first word only)
-                if word not in [miniIndexPusher.miniIndex[i]["_id"] for i in range(len(miniIndexPusher.miniIndex))] or not miniIndexPusher.miniIndex:
-                    miniIndexPusher.mini_index_queue_lock.acquire()
+                if word not in [Index.miniIndex[i]["_id"] for i in range(len(Index.miniIndex))] or not Index.miniIndex:
+                    Index.mini_index_queue_lock.acquire()
                     self.createMiniIndexEntry(word, embObj)
-                    miniIndexPusher.mini_index_queue_lock.release()
+                    Index.mini_index_queue_lock.release()
 
                 else:
-                    for termObject in miniIndexPusher.miniIndex:
+                    for termObject in Index.miniIndex:
                         if termObject.get("_id") == word:
                             self.updateMiniIndexEntry(termObject, embObj)
                             break
 
     def printMiniIndex(self):
-        for x in miniIndexPusher.miniIndex:
+        for x in Index.miniIndex:
             print(x)
 
     def run(self):
         time.sleep(3)
-        while miniIndexPusher.nof_pages > 0:
-            while miniIndexPusher.mini_count > 0:
-                print(miniIndexPusher.mini_count)
+        while Index.nof_pages > 0:
+            while Index.mini_count > 0:
+                print(Index.mini_count)
                 self.updateMiniIndex()
-            miniIndexPusher.mini_count = miniIndexPusher.mini_size
+            Index.mini_count = Index.mini_size
 

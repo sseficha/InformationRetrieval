@@ -14,8 +14,6 @@ class Index(threading.Thread):
     db = cluster["InformationRetrieval"]
     collection = db["Indexer"]
     documentsCollection = db["Documents"]
-    nof_pages = 0
-    nof_documents = 0
     mini_size = 0
     mini_count = 0
     miniIndex = []
