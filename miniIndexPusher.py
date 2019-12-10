@@ -9,7 +9,7 @@ class miniIndexPusher (Index,threading.Thread):
     nof_pages = 0
 
     def __init__(self):
-        Index().__init__()
+        Index.__init__(self)
 
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
@@ -56,8 +56,8 @@ class miniIndexPusher (Index,threading.Thread):
         if not Index.word_queue:
             time.sleep(0.5)
         else:
-            Index.nof_pages -= 1
-            Index.mini_count -= 1
+            miniIndexPusher.nof_pages -= 1
+            # Index.mini_count -= 1
             # +lock!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             Index.word_queue_lock.acquire()
             nextEntry = Index.word_queue.pop(0)
@@ -98,9 +98,9 @@ class miniIndexPusher (Index,threading.Thread):
 
     def run(self):
         time.sleep(3)
-        while Index.nof_pages > 0:
-            while Index.mini_count > 0:
-                print(Index.mini_count)
-                self.updateMiniIndex()
-            Index.mini_count = Index.mini_size
+        while miniIndexPusher.nof_pages > 0:
+            # while Index.mini_count > 0:
+            #     print(Index.mini_count)
+            self.updateMiniIndex()
+            # Index.mini_count = Index.mini_size
 

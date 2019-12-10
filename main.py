@@ -66,13 +66,13 @@ miniIndex = []
 pusher1 = miniIndexPusher()
 puller1 = miniIndexPuller()
 
-Index.set_document_number(nof_pages)
 Index.set_word_queue(word_queue)
 Index.set_locks(word_queue_lock,mini_index_queue_lock)
 Index.set_mini_index(miniIndex)
-Index.set_page_number(nof_pages)
+miniIndexPusher.set_page_number(nof_pages)
+miniIndexPuller.set_page_number(nof_pages)
 #Index.set_page_number(4)
-Index.set_mini_size(2)
+# Index.set_mini_size(2)
 if reset:
     Index.clear()
 pusher1.start()

@@ -9,9 +9,11 @@ from Index import Index
 # updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
 class miniIndexPuller(Index, threading.Thread):
+
     nof_pages = 0
+
     def __init__(self):
-        Index().__init__()
+        Index.__init__(self)
         threading.Thread.__init__(self)
 
 
@@ -20,7 +22,7 @@ class miniIndexPuller(Index, threading.Thread):
         if not Index.miniIndex:
             time.sleep(1)
         else:
-            Index.nof_pages -= 1
+            miniIndexPuller.nof_pages -= 1
             start = time.time()
             termObject = Index.miniIndex.pop(0)
             term = termObject.get("_id")
@@ -36,7 +38,7 @@ class miniIndexPuller(Index, threading.Thread):
 
 
     def run(self):
-        while Index.nof_pages  > 0:
+        while miniIndexPuller.nof_pages  > 0:
             print("Start updating Index")
             self.updateIndex()
             print('End of Index run!!!!')

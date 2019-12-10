@@ -26,10 +26,6 @@ class Index(threading.Thread):
 
 
     @staticmethod
-    def set_document_number(n):
-        Index.nof_documents = n
-
-    @staticmethod
     def clear():
         Index.collection.delete_many({})
         Index.documentsCollection.delete_many({})
