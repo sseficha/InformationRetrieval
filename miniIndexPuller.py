@@ -18,14 +18,14 @@ class miniIndexPuller(Index, threading.Thread):
 
     @staticmethod
     def set_page_number(n):
-        Index.nof_pages = n
+        miniIndexPuller.nof_pages = n
 
-    def updateIndex(self):
+    def updateIndex(self, t):
 
         if not Index.miniIndex:
-            time.sleep(1)
+            time.sleep(0.5)
+            t += 1
         else:
-            miniIndexPuller.nof_pages -= 1
             start = time.time()
             termObject = Index.miniIndex.pop(0)
             term = termObject.get("_id")
@@ -36,15 +36,15 @@ class miniIndexPuller(Index, threading.Thread):
                 upsert = True
             )
             print(time.time() - start)
-
-
+            t = 0
+        return t
 
 
     def run(self):
-        print("hi")
-        while miniIndexPuller.nof_pages > 0:
+        t = 0
+        while t < 20:
             print("Start updating Index")
-            self.updateIndex()
+            t = self.updateIndex(t)
             print('End of Index run!!!!')
-            time.sleep(2)
+
 

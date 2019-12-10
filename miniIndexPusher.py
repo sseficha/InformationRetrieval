@@ -17,7 +17,7 @@ class miniIndexPusher (Index,threading.Thread):
 
     @staticmethod
     def set_page_number(n):
-        Index.nof_pages = n
+        miniIndexPusher.nof_pages = n
 
     def createEmbeddedObject(self, nameOfDocument, tf):
 
