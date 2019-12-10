@@ -14,6 +14,11 @@ class miniIndexPusher (Index,threading.Thread):
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
     # 2) the word frequency in that document
+
+    @staticmethod
+    def set_page_number(n):
+        Index.nof_pages = n
+
     def createEmbeddedObject(self, nameOfDocument, tf):
 
         embeddedObject = {

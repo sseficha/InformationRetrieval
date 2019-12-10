@@ -29,15 +29,11 @@ class Index(threading.Thread):
     def clear():
         Index.collection.delete_many({})
         Index.documentsCollection.delete_many({})
-
-    @staticmethod
-    def set_page_number(n):
-        Index.nof_pages = n
-
-    @staticmethod
-    def set_mini_size(n):
-        Index.mini_size = n
-        Index.mini_count = n
+    #
+    # @staticmethod
+    # def set_mini_size(n):
+    #     Index.mini_size = n
+    #     Index.mini_count = n
 
     @staticmethod
     def set_word_queue(w_queue):
