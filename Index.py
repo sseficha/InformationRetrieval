@@ -172,7 +172,7 @@ class Index(threading.Thread):
                     self.createMiniIndexEntry(word, embObj)
 
                 else:
-                    for termObject in Index.miniIndex:  # maybe there is a different implementation
+                    for termObject in Index.miniIndex: 
                         if termObject.get("_id") == word:
                             self.updateMiniIndexEntry(termObject, embObj)
                             break
@@ -193,26 +193,38 @@ class Index(threading.Thread):
             print("Start updating Index")
             self.updateIndex()
         print('End of Index run!!!!')
+        # C = {}
+        # N = Index.documentsCollection.find().count()
 
-    # top-k slides, not changed
-    # not ready yet
-    def topkDocuments(query):
-        C = {}
+
+    # top-k
+
+    def topkDocuments(self, query):
+        start = time.time()
+        print(start)
+        C = []
         N = Index.documentsCollection.find().count()
         for term in query:
-            if Index.collection.find_one({"_id": term}) is not None:
-                nt = Index.collection.find({"_id": term}).distinct("sumOfDocuments")
-                idf = log(N / nt[0])  # N*nt
-                #idf = N / nt[0]
-                documents = Index.collection.find({"_id": term}).distinct("nameTf")
-                for docu in documents:
-                    mydoc = docu["name"]
-                    if mydoc not in C.keys():
-                        C.update({"name" : mydoc, "value" : 0})
-                    tf = docu["tf"]
-                    x = C.get("value")
-                    C.update({"value": x + (tf * idf)})
-        print(C)
-        return C
+            nt = Index.collection.find_one({"_id": term}, {"sumOfDocuments" : 1, "nameTf" : 1})
+            if nt is None:
+                print("word not in db")
+                continue
+            idf = log(N / nt.get("sumOfDocuments"))  # N*nt
+            documents = nt.get("nameTf")
+            for document in documents:
+                docName = document["name"]
+                if next((item for item in C if item["name"] == docName), None) is None:
+                    C.append({"name" : docName, "value" : 0})
+                tf = document["tf"]
+                x = next(item for item in C if item["name"] == docName)
+                x.update({"value": x.get("value") + (tf * idf)})
 
-            # leipei kanonikopoihsh sth monada ousiastika ti einai to Ld
+        # normalization with Td(number of unique terms in a document)
+        for item in C:
+            td = Index.documentsCollection.find_one({"_id": item["name"]}, {"_id": 0, "Td": 1})
+            x = item["value"]
+            print(td.get("Td"))
+            item.update({"value" : x/(td.get("Td"))})
+        print(C)
+        print(time.time() - start)
+        return C
