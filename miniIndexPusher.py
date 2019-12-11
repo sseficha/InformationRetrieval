@@ -1,7 +1,5 @@
-import pymongo
 import time
-from pymongo import MongoClient
-from numpy import log
+import pymongo
 import threading
 from Index import Index
 
@@ -31,28 +29,9 @@ class miniIndexPusher (Index,threading.Thread):
     def createMiniIndexEntry(self, word, embeddedObject):
 
         miniIndexEntry = ({"_id": word,
-                           "sumOfDocuments": 1,  # nomizw einai perito pleon auto alla vlepoume
-                           "nameTf": [embeddedObject]})
+                           "nameTf": [embeddedObject]})  # "sumOfDocuments": 1,  # nomizw einai perito pleon auto alla vlepoume
 
         Index.miniIndex.append(miniIndexEntry)
-
-    # updates a term that already exists in miniIndex
-    def updateMiniIndexEntry(self, termObject, embObj):
-
-        # documentNames = [document1, document2, ...]
-        documentNames = []
-
-        # namesAntTfs structure = {document1 : tf, document2 : tf, ...}
-        namesAndTfs = termObject.get("nameTf", {})
-
-        for item in namesAndTfs:
-            documentNames.append(item.get("name"))
-
-        # if a word is in the same document more than once, there is no need for update,
-        # because embeddedObject already holds all the info for a word in a document
-        if embObj.get("name") not in documentNames:
-            namesAndTfs.append(embObj)
-            termObject["sumOfDocuments"] += 1
 
 
     def updateMiniIndex(self):
@@ -67,35 +46,29 @@ class miniIndexPusher (Index,threading.Thread):
             Index.word_queue_lock.acquire()
             nextEntry = Index.word_queue.pop(0)
             Index.word_queue_lock.release()
-            print("===========================================================")
-            print(nextEntry)
             title = nextEntry.get("link")
             words = nextEntry.get("words")
-            Td = {
-                "_id": title,
-                "Td": len(words)  #allagi
-            }
-            Index.documentsCollection.insert_one(Td)
 
             # {term 1 : tf , term 2 : tf}
             tfDict = dict((x, words.count(x)) for x in set(words))
+
+            # update unique terms count of a document
+            Td = {
+                "_id": title,
+                "Td": len(tfDict.keys())
+            }
+            Index.documentsCollection.insert_one(Td)
+
 
             # for each word in a document
             for word in tfDict.keys():
 
                 embObj = self.createEmbeddedObject(title, tfDict.get(word))
 
-                # checks if the word is already in miniIndex or miniIndex is empty (for the first word only)
-                if word not in [Index.miniIndex[i]["_id"] for i in range(len(Index.miniIndex))] or not Index.miniIndex:
-                    Index.mini_index_queue_lock.acquire()
-                    self.createMiniIndexEntry(word, embObj)
-                    Index.mini_index_queue_lock.release()
+                Index.mini_index_queue_lock.acquire()
+                self.createMiniIndexEntry(word, embObj)
+                Index.mini_index_queue_lock.release()
 
-                else:
-                    for termObject in Index.miniIndex:
-                        if termObject.get("_id") == word:
-                            self.updateMiniIndexEntry(termObject, embObj)
-                            break
 
     def printMiniIndex(self):
         for x in Index.miniIndex:

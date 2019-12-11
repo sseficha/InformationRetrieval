@@ -20,6 +20,7 @@ class Index(threading.Thread):
     word_queue = []
     mini_index_queue_lock = None
     word_queue_lock = None
+    mini_index_pull_lock = None
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -48,7 +49,8 @@ class Index(threading.Thread):
     def set_mini_index(index):
         Index.miniIndex = index
 
-    # top-k
+    # top-k taksinomimena
+
     @staticmethod
     def topkDocuments(query):
         start = time.time()

@@ -11,7 +11,7 @@ import sys
 
 
 
-
+start = time.time()
 
 link = sys.argv[1]
 nof_pages = int(sys.argv[2])
@@ -23,6 +23,7 @@ link_queue = []
 word_queue_lock = threading.Lock()
 link_queue_lock = threading.Lock()
 mini_index_queue_lock = threading.Lock()
+
 
 #Crawler.set_page_number(4)
 
@@ -54,7 +55,7 @@ for crawler in crawler_list:
     crawler.start()
 
 
-
+#kanw tetoio gia puller pusher
 
 #crawler1.start()
 # crawler2.start()
@@ -64,7 +65,11 @@ for crawler in crawler_list:
 
 miniIndex = []
 pusher1 = miniIndexPusher()
+pusher2 = miniIndexPusher()
+pusher3 = miniIndexPusher()
 puller1 = miniIndexPuller()
+puller2 = miniIndexPuller()
+puller3 = miniIndexPuller()
 
 Index.set_word_queue(word_queue)
 Index.set_locks(word_queue_lock,mini_index_queue_lock)
@@ -76,11 +81,14 @@ miniIndexPuller.set_page_number(nof_pages)
 if reset:
     Index.clear()
 pusher1.start()
+pusher2.start()
+pusher3.start()
 puller1.start()
+puller2.start()
+puller3.start()
 
 
-
-
+# print(time.time() - start)
 
 #for crawler in crawler_list:
 #    crawler.join()
