@@ -71,8 +71,8 @@ class miniIndexPusher (Index,threading.Thread):
 
 
     def printMiniIndex(self):
-        for x in Index.miniIndex:
-            print(x)
+        time.sleep(5)
+        print(len(Index.miniIndex))
 
     def run(self):
         time.sleep(3)
@@ -80,5 +80,6 @@ class miniIndexPusher (Index,threading.Thread):
             # while Index.mini_count > 0:
             #     print(Index.mini_count)
             self.updateMiniIndex()
+            self.printMiniIndex()
             # Index.mini_count = Index.mini_size
 

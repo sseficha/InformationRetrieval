@@ -39,7 +39,7 @@ class miniIndexPuller(Index, threading.Thread):
 
     def run(self):
         t = 0
-        time.sleep(3)
+        time.sleep(8)
         while t < 20:
             t = self.updateIndex(t)
 

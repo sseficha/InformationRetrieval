@@ -9,9 +9,11 @@ import threading
 # updateIndex->anoigeis vasi kai meta olo ena lock...oso adiazeis mini index
 
 class Index(threading.Thread):
-    cluster = MongoClient(
-        "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
-    db = cluster["InformationRetrieval"]
+    # cluster = MongoClient(
+    #     "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
+    # db = cluster["InformationRetrieval"]
+    client = MongoClient('localhost', 27017)
+    db = client.InformationRetrieval
     collection = db["Indexer"]
     documentsCollection = db["Documents"]
     mini_size = 0
