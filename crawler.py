@@ -49,7 +49,7 @@ class Crawler(threading.Thread):
             if len(Crawler.link_queue) == 0:
                 time.sleep(0.5)
             else:
-                print(Crawler.link_queue)
+                # print(len(Crawler.link_queue))
 
                 Crawler.link_queue_lock.acquire()
                 link = Crawler.link_queue.pop(0)
@@ -63,7 +63,8 @@ class Crawler(threading.Thread):
                 Crawler.link_queue_lock.release()
                 Crawler.decrement_page_number()
 
-            print(Crawler.word_queue)
+            # print(len(Crawler.word_queue))
+            # print("$$%$%$%%$")
 
 
 # for indexer to fetch words
@@ -76,5 +77,5 @@ class Crawler(threading.Thread):
             #     Crawler.word_queue_lock.release()
 
             # send them for processing at index
-            time.sleep(2)
+            # time.sleep(2)
             #print(Crawler.nof_pages)

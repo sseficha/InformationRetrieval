@@ -66,8 +66,8 @@ for crawler in crawler_list:
 
 miniIndex = []
 pusher1 = miniIndexPusher()
-pusher2 = miniIndexPusher()
-pusher3 = miniIndexPusher()
+# pusher2 = miniIndexPusher()
+# pusher3 = miniIndexPusher()
 puller1 = miniIndexPuller()
 puller2 = miniIndexPuller()
 puller3 = miniIndexPuller()
@@ -82,8 +82,8 @@ miniIndexPuller.set_page_number(nof_pages)
 if reset:
     Index.clear()
 pusher1.start()
-pusher2.start()
-pusher3.start()
+# pusher2.start()
+# pusher3.start()
 puller1.start()
 puller2.start()
 puller3.start()

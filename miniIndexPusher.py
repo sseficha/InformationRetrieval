@@ -2,6 +2,7 @@ import time
 import pymongo
 import threading
 from Index import Index
+from pymongo import errors
 
 class miniIndexPusher (Index,threading.Thread):
     nof_pages = 0
@@ -52,13 +53,16 @@ class miniIndexPusher (Index,threading.Thread):
             # {term 1 : tf , term 2 : tf}
             tfDict = dict((x, words.count(x)) for x in set(words))
 
-            # update unique terms count of a document
+                      # update unique terms count of a document
             Td = {
                 "_id": title,
                 "Td": len(tfDict.keys())
             }
-            Index.documentsCollection.insert_one(Td)
 
+            try:
+                Index.documentsCollection.insert_one(Td)
+            except pymongo.errors.DuplicateKeyError:
+                pass
 
             # for each word in a document
             for word in tfDict.keys():
