@@ -80,6 +80,5 @@ class miniIndexPusher (Index,threading.Thread):
             # while Index.mini_count > 0:
             #     print(Index.mini_count)
             self.updateMiniIndex()
-            self.printMiniIndex()
             # Index.mini_count = Index.mini_size
 

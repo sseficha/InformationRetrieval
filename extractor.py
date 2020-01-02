@@ -82,7 +82,6 @@ def html_extractor(url):
     #         new_words.append(new_word)
     #     return new_words
 
-
     return keepwords, links
 
 

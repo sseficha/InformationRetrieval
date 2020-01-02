@@ -16,11 +16,16 @@ class miniIndexPuller(Index, threading.Thread):
     def set_page_number(n):
         miniIndexPuller.nof_pages = n
 
+    def printMiniIndex(self):
+        time.sleep(5)
+        print(len(Index.miniIndex))
+
     def updateIndex(self, t):
 
         if not Index.miniIndex:
             time.sleep(0.5)
             t += 2
+
         else:
             #locks
             Index.mini_index_queue_lock.acquire()
