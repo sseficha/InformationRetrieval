@@ -26,7 +26,6 @@ link_queue_lock = threading.Lock()
 mini_index_queue_lock = threading.Lock()
 
 
-#Crawler.set_page_number(4)
 
 
 crawler_list = []
@@ -39,14 +38,6 @@ Crawler.addQueues(word_queue, link_queue)
 Crawler.addLocks(word_queue_lock, link_queue_lock)
 Crawler.addLink(link)
 
-#crawler1 = Crawler(word_queue, link_queue, word_queue_lock)
-#crawler1.addLink('https://www.geeksforgeeks.org/inverted-index/')
-#crawler1.addLink('sample1.html')
-
-#crawler1.addLink(link)
-
-# crawler2 = Crawler(word_queue, link_queue, word_queue_lock)
-
 
 
 
@@ -55,14 +46,6 @@ print('Starting threads')
 for crawler in crawler_list:
     crawler.start()
 
-
-#kanw tetoio gia puller pusher
-
-#crawler1.start()
-# crawler2.start()
-
-#if reset:
-#    empty Index
 
 miniIndex = []
 pusher1 = miniIndexPusher()
@@ -88,24 +71,6 @@ puller1.start()
 puller2.start()
 puller3.start()
 
-
-# print(time.time() - start)
-
-#for crawler in crawler_list:
-#    crawler.join()
-
-#index1.join()
-
-#while time.time() < End:
-#    index.updateMiniIndex()
-
-# index.updateWeights()
-# index.printPosts()
-#index.updateIndex()
-
-
-#crawler1.join()
-# crawler2.join()
 
 
 
