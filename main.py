@@ -9,7 +9,8 @@ import sys
 # python main.py sample1.html 4 1 2 trexto etsi
 
 
-
+#prepei na kanoume kati otan den exei alla outlinks mia selida p.x teleport. p.x an arxisei sto geeks gia 50 selides stamataei stis 17 
+#petaei ena error duplicate key sto insert Td gia kapoio logo.
 
 start = time.time()
 
