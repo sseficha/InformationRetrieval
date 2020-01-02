@@ -10,15 +10,10 @@ class Crawler(threading.Thread):
     link_queue_lock = None
     word_queue_lock = None
 
-    # def __init__(Crawler, page, nof_pages, reset, nof_threads):
 
     def __init__(self):
         threading.Thread.__init__(self)
 
-        #Crawler.link_queue_lock = threading.Lock()
-        #Crawler.word_queue_lock = word_queue_lock
-        #Crawler.word_queue = word_queue
-        #Crawler.link_queue = link_queue
 
     @staticmethod
     def set_page_number(number):
@@ -49,17 +44,21 @@ class Crawler(threading.Thread):
             if len(Crawler.link_queue) == 0:
                 time.sleep(0.5)
             else:
+<<<<<<< HEAD
                 # print(len(Crawler.link_queue))
+=======
+                #print(Crawler.link_queue)
+>>>>>>> a899d6710931d979ca4849a10085bcee77477c62
 
                 Crawler.link_queue_lock.acquire()
                 link = Crawler.link_queue.pop(0)
                 Crawler.link_queue_lock.release()
                 extracted_words, extracted_links = html_extractor(link)  # crawl that link
                 Crawler.word_queue_lock.acquire()
-                Crawler.word_queue.append({'link':link,'words': extracted_words})
+                Crawler.word_queue.append({'link':link,'words': extracted_words})   #save the words
                 Crawler.word_queue_lock.release()
                 Crawler.link_queue_lock.acquire()
-                [Crawler.link_queue.append(link) for link in extracted_links]
+                [Crawler.link_queue.append(link) for link in extracted_links]       #save the links
                 Crawler.link_queue_lock.release()
                 Crawler.decrement_page_number()
 
@@ -67,8 +66,8 @@ class Crawler(threading.Thread):
             # print("$$%$%$%%$")
 
 
-# for indexer to fetch words
 
+<<<<<<< HEAD
             # if len(Crawler.word_queue) == 0:
             #     time.sleep(0.5)
             # else:
@@ -79,3 +78,6 @@ class Crawler(threading.Thread):
             # send them for processing at index
             # time.sleep(2)
             #print(Crawler.nof_pages)
+=======
+            #time.sleep(2)
+>>>>>>> a899d6710931d979ca4849a10085bcee77477c62
