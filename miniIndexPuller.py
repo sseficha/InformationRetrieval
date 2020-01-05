@@ -16,18 +16,13 @@ class miniIndexPuller(Index, threading.Thread):
     def set_page_number(n):
         miniIndexPuller.nof_pages = n
 
-    def printMiniIndex(self):
-        time.sleep(5)
-        print(len(Index.miniIndex))
-
+    # updates database
     def updateIndex(self, t):
 
         if not Index.miniIndex:
             time.sleep(0.5)
             t += 2
-
         else:
-            #locks
             Index.mini_index_queue_lock.acquire()
             termObject = Index.miniIndex.pop(0)
             Index.mini_index_queue_lock.release()
@@ -43,6 +38,7 @@ class miniIndexPuller(Index, threading.Thread):
 
 
     def run(self):
+        # t is incremented everytime miniindex is empty.If mini index is empty for some time program stops,because it means that crawlers ended their work.
         t = 0
         time.sleep(5)
         while t < 20:

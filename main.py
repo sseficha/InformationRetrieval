@@ -29,11 +29,14 @@ mini_index_queue_lock = threading.Lock()
 
 
 crawler_list = []
+miniIndexPuller_list = []
 for i in range(0, nof_threads):
     crawler_list.append(Crawler())
 
+for i in range(0, 4):
+    miniIndexPuller_list.append(miniIndexPuller())
+
 Crawler.set_page_number(nof_pages)
-#PULLER set documents max gia na stamataei tha paei panw
 Crawler.addQueues(word_queue, link_queue)
 Crawler.addLocks(word_queue_lock, link_queue_lock)
 Crawler.addLink(link)
@@ -48,12 +51,11 @@ for crawler in crawler_list:
 
 
 miniIndex = []
+
 pusher1 = miniIndexPusher()
-# pusher2 = miniIndexPusher()
-# pusher3 = miniIndexPusher()
-puller1 = miniIndexPuller()
-puller2 = miniIndexPuller()
-puller3 = miniIndexPuller()
+
+for puller in miniIndexPuller_list:
+    puller.start()
 
 Index.set_word_queue(word_queue)
 Index.set_locks(word_queue_lock,mini_index_queue_lock)
@@ -65,11 +67,7 @@ miniIndexPuller.set_page_number(nof_pages)
 if reset:
     Index.clear()
 pusher1.start()
-# pusher2.start()
-# pusher3.start()
-puller1.start()
-puller2.start()
-puller3.start()
+
 
 
 

@@ -10,13 +10,14 @@ class miniIndexPusher (Index,threading.Thread):
     def __init__(self):
         Index.__init__(self)
 
-    # creates an object for each word that represents :
-    # 1) name of a document a word is contained
-    # 2) the word frequency in that document
 
     @staticmethod
     def set_page_number(n):
         miniIndexPusher.nof_pages = n
+
+    # creates an object for each word that represents :
+    # 1) name of a document a word is contained
+    # 2) the word frequency in that document
 
     def createEmbeddedObject(self, nameOfDocument, tf):
 
@@ -30,7 +31,7 @@ class miniIndexPusher (Index,threading.Thread):
     def createMiniIndexEntry(self, word, embeddedObject):
 
         miniIndexEntry = ({"_id": word,
-                           "nameTf": [embeddedObject]})  # "sumOfDocuments": 1,  # nomizw einai perito pleon auto alla vlepoume
+                           "nameTf": [embeddedObject]})
 
         Index.miniIndex.append(miniIndexEntry)
 
@@ -42,8 +43,6 @@ class miniIndexPusher (Index,threading.Thread):
             time.sleep(0.5)
         else:
             miniIndexPusher.nof_pages -= 1
-            # Index.mini_count -= 1
-            # +lock!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             Index.word_queue_lock.acquire()
             nextEntry = Index.word_queue.pop(0)
             Index.word_queue_lock.release()
@@ -53,36 +52,30 @@ class miniIndexPusher (Index,threading.Thread):
             # {term 1 : tf , term 2 : tf}
             tfDict = dict((x, words.count(x)) for x in set(words))
 
-                      # update unique terms count of a document
+            # update unique terms count of a document
             Td = {
                 "_id": title,
                 "Td": len(tfDict.keys())
             }
 
             try:
+                #updates collection Documents of database that holds the information for normalization at the query.
                 Index.documentsCollection.insert_one(Td)
-            except pymongo.errors.DuplicateKeyError:
+
+                # for each word in a document
+                for word in tfDict.keys():
+                    embObj = self.createEmbeddedObject(title, tfDict.get(word))
+
+                    Index.mini_index_queue_lock.acquire()
+                    self.createMiniIndexEntry(word, embObj)
+                    Index.mini_index_queue_lock.release()
+
+            except pymongo.errors.DuplicateKeyError:  # a site might have a link to itself
                 pass
 
-            # for each word in a document
-            for word in tfDict.keys():
-
-                embObj = self.createEmbeddedObject(title, tfDict.get(word))
-
-                Index.mini_index_queue_lock.acquire()
-                self.createMiniIndexEntry(word, embObj)
-                Index.mini_index_queue_lock.release()
-
-
-    def printMiniIndex(self):
-        time.sleep(5)
-        print(len(Index.miniIndex))
 
     def run(self):
         time.sleep(3)
         while miniIndexPusher.nof_pages > 0:
-            # while Index.mini_count > 0:
-            #     print(Index.mini_count)
             self.updateMiniIndex()
-            # Index.mini_count = Index.mini_size
 

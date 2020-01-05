@@ -44,11 +44,12 @@ class Crawler(threading.Thread):
             if len(Crawler.link_queue) == 0:
                 time.sleep(0.5)
             else:
-<<<<<<< HEAD
-                # print(len(Crawler.link_queue))
-=======
+# <<<<<<< HEAD
+#                 print(Crawler.link_queue)
+#                 print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"8
+# =======
                 #print(Crawler.link_queue)
->>>>>>> a899d6710931d979ca4849a10085bcee77477c62
+# >>>>>>> a899d6710931d979ca4849a10085bcee77477c62
 
                 Crawler.link_queue_lock.acquire()
                 link = Crawler.link_queue.pop(0)
@@ -62,12 +63,12 @@ class Crawler(threading.Thread):
                 Crawler.link_queue_lock.release()
                 Crawler.decrement_page_number()
 
-            # print(len(Crawler.word_queue))
-            # print("$$%$%$%%$")
+            print(len(Crawler.word_queue))
 
 
 
-<<<<<<< HEAD
+
+# <<<<<<< HEAD
             # if len(Crawler.word_queue) == 0:
             #     time.sleep(0.5)
             # else:
@@ -78,6 +79,6 @@ class Crawler(threading.Thread):
             # send them for processing at index
             # time.sleep(2)
             #print(Crawler.nof_pages)
-=======
+# =======
             #time.sleep(2)
->>>>>>> a899d6710931d979ca4849a10085bcee77477c62
+# >>>>>>> a899d6710931d979ca4849a10085bcee77477c62
