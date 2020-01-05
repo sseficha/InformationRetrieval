@@ -38,7 +38,7 @@ class miniIndexPuller(Index, threading.Thread):
 
 
     def run(self):
-        # t is incremented everytime miniindex is empty.If mini index is empty for some time program stops,because it means that crawlers ended their work.
+        # t is incremented everytime miniindex is empty.If mini index is empty for some time the threads stop,because it means that crawlers ended their work.
         t = 0
         time.sleep(5)
         while t < 20:

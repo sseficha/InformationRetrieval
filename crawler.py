@@ -63,7 +63,7 @@ class Crawler(threading.Thread):
                 Crawler.link_queue_lock.release()
                 Crawler.decrement_page_number()
 
-            print(len(Crawler.word_queue))
+            # print(len(Crawler.word_queue))
 
 
 
