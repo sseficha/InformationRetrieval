@@ -27,10 +27,10 @@ class miniIndexPuller(Index, threading.Thread):
             termObject = Index.miniIndex.pop(0)
             Index.mini_index_queue_lock.release()
             term = termObject.get("_id")
-            DocsWithTf = termObject.get("nameTf")
+            DocWithTf = termObject.get("nameTf")
             Index.collection.find_one_and_update(
                 {"_id": term},
-                {"$inc" : {"sumOfDocuments": 1},"$push" : {"nameTf" : {"$each" : DocsWithTf }}},
+                {"$inc" : {"sumOfDocuments": 1},"$push" : {"nameTf" : {"$each" : DocWithTf }}},
                 upsert = True
             )
             t = 0
