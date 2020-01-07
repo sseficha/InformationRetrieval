@@ -6,15 +6,11 @@ from Index import Index
 
 class miniIndexPuller(Index, threading.Thread):
 
-    nof_pages = 0
 
     def __init__(self):
         Index.__init__(self)
         threading.Thread.__init__(self)
 
-    @staticmethod
-    def set_page_number(n):
-        miniIndexPuller.nof_pages = n
 
     # updates database
     def updateIndex(self, t):
@@ -38,7 +34,8 @@ class miniIndexPuller(Index, threading.Thread):
 
 
     def run(self):
-        # t is incremented everytime miniindex is empty.If mini index is empty for some time the threads stop,because it means that crawlers ended their work.
+        # t is incremented everytime miniindex is empty.If mini index is empty for some time , threads stop,
+        # because it means that crawlers finished crawling.
         t = 0
         time.sleep(5)
         while t < 20:

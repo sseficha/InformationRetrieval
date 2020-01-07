@@ -4,31 +4,28 @@ from pymongo import MongoClient
 from numpy import log
 import threading
 import math
+from operator import itemgetter
 
 
 class Index(threading.Thread):
-
-    # cluster = MongoClient(
-    #     "mongodb+srv://chris:12340987@cluster0-i10z0.azure.mongodb.net/test?retryWrites=true&w=majority")
-    # db = cluster["InformationRetrieval"]
 
     client = MongoClient('localhost', 27017)
     db = client.InformationRetrieval
     collection = db["Indexer"]
     documentsCollection = db["Documents"]
-    mini_size = 0
-    mini_count = 0
     miniIndex = []
     word_queue = []
     mini_index_queue_lock = None
     word_queue_lock = None
     mini_index_pull_lock = None
+    smt = 0
 
     def __init__(self):
         threading.Thread.__init__(self)
 
 
     @staticmethod
+    # deletes everything in database
     def clear():
         Index.collection.delete_many({})
         Index.documentsCollection.delete_many({})
@@ -46,36 +43,47 @@ class Index(threading.Thread):
     def set_mini_index(index):
         Index.miniIndex = index
 
-    # top-k taksinomimena
+    # query
 
     @staticmethod
     def topkDocuments(query):
         start = time.time()
         print("----------")
-        C = []
+        accumulators = []
         N = Index.documentsCollection.find().count()
         for term in query:
-            nt = Index.collection.find_one({"_id": term}, {"sumOfDocuments" : 1, "nameTf" : 1})
-            if nt is None:
+            # search for term in database , and store in var the term's data
+            var = Index.collection.find_one({"_id": term}, {"sumOfDocuments" : 1, "nameTf" : 1})
+            # if term is not in database , program checks the next term of the query
+            if var is None:
                 continue
-            idf = log(N / nt.get("sumOfDocuments"))  # N*nt
-            documents = nt.get("nameTf")
+            idf = log(N / var.get("sumOfDocuments"))  # var.get("sumOfDocuments") represents nt
+            documents = var.get("nameTf")
             for document in documents:
                 docName = document["name"]
-                if next((item for item in C if item["name"] == docName), None) is None:
-                    C.append({"name" : docName, "value" : 0})
+                # if accumulator does not exist for a term, create one.
+                if next((item for item in accumulators if item["name"] == docName), None) is None:
+                    accumulators.append({"name" : docName, "value" : 0})
+
+                # update an accumulator
                 tf = document["tf"]
-                x = next(item for item in C if item["name"] == docName)
+                # check if an accumulator already exists and updates him
+                x = next(item for item in accumulators if item["name"] == docName)
                 x.update({"value": x.get("value") + (tf * idf)})
 
         # normalization with Td(number of unique terms in a document)
-        for item in C:
+        for item in accumulators:
+            # search database for the document name and stores in variable td the Td of the document
             td = Index.documentsCollection.find_one({"_id": item["name"]}, {"_id": 0, "Td": 1})
             x = item["value"]
-            print(td.get("Td"))
+            # normalize each document score in accumulator structure
             item.update({"value" : x/(td.get("Td"))})
+
+        # sorting
+        sortedAccumulators = sorted(accumulators, key=itemgetter('value'), reverse=True)
 
         print("Query time")
         print(time.time() - start)
         print("----------")
-        return C
+
+        return sortedAccumulators

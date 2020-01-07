@@ -17,7 +17,7 @@ class miniIndexPusher (Index,threading.Thread):
 
     # creates an object for each word that represents :
     # 1) name of a document a word is contained
-    # 2) the word frequency in that document
+    # 2) the word's frequency in that document
 
     def createEmbeddedObject(self, nameOfDocument, tf):
 
@@ -49,17 +49,17 @@ class miniIndexPusher (Index,threading.Thread):
             title = nextEntry.get("link")
             words = nextEntry.get("words")
 
-            # {term 1 : tf , term 2 : tf}
+            # {term 1 : tf , term 2 : tf , term3 ...}
             tfDict = dict((x, words.count(x)) for x in set(words))
 
-            # update unique terms count of a document
+            # store unique terms count of a document
             Td = {
                 "_id": title,
                 "Td": len(tfDict.keys())
             }
 
             try:
-                #updates collection Documents of database that holds the information for normalization at the query.
+                # updates collection Documents of database that holds the information for normalization at the query.
                 Index.documentsCollection.insert_one(Td)
 
                 # for each word in a document
@@ -70,7 +70,8 @@ class miniIndexPusher (Index,threading.Thread):
                     self.createMiniIndexEntry(word, embObj)
                     Index.mini_index_queue_lock.release()
 
-            except pymongo.errors.DuplicateKeyError:  # a site might have a link to itself
+            # a site might have a link to itself or crawlers might find the same link again.
+            except pymongo.errors.DuplicateKeyError:
                 pass
 
 
