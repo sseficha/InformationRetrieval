@@ -17,7 +17,9 @@ def html_extractor(url):
     # for link in soup.findAll('a'):
     #     links.append(link.get('href'))
 
-    res = requests.get(url)
+
+    res = requests.get(url)  # thelei try except giati petaei error
+
     html = res.text
     soup = BeautifulSoup(html, 'html.parser')
     links = []
