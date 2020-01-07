@@ -7,11 +7,17 @@ import sys
 
 
 link = sys.argv[1]
-nof_pages = int(sys.argv[2])
+nof_pages = int(sys.argv[2])    #number of pages to crawl
 reset = int(sys.argv[3])
-nof_threads = int(sys.argv[4])
+nof_threads = int(sys.argv[4])      #number of crawler threads
+
 word_queue = []
 link_queue = []
+
+#all the lists below are accessed by different threads/classes
+#the threads share a common lock so that there are no issues when adding/fetching elements from them
+
+
 word_queue_lock = threading.Lock()
 link_queue_lock = threading.Lock()
 mini_index_queue_lock = threading.Lock()
@@ -19,8 +25,11 @@ mini_index_queue_lock = threading.Lock()
 
 
 
-crawler_list = []
-miniIndexPuller_list = []
+
+
+crawler_list = []       #list with instances of Crawler
+miniIndexPuller_list = []  #list with instances of miniIndexPuller
+
 for i in range(0, nof_threads):
     crawler_list.append(Crawler())
 
@@ -31,7 +40,7 @@ for i in range(0, 6):
 Crawler.set_page_number(nof_pages)
 Crawler.addQueues(word_queue, link_queue)
 Crawler.addLocks(word_queue_lock, link_queue_lock)
-Crawler.addLink(link)
+Crawler.addLink(link)       #starter link
 
 
 
@@ -44,7 +53,7 @@ for crawler in crawler_list:
 
 miniIndex = []
 
-pusher1 = miniIndexPusher()
+pusher1 = miniIndexPusher()        #1 instance of miniIndexPusher is enough cause it doesn't do that much work
 
 for puller in miniIndexPuller_list:
     puller.start()

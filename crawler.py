@@ -4,7 +4,7 @@ import time
 
 
 class Crawler(threading.Thread):
-    nof_pages = 0
+    nof_pages = 0       #number of pages to be processed/saved
     word_queue = []
     link_queue = []
     link_queue_lock = None
@@ -48,19 +48,18 @@ class Crawler(threading.Thread):
 
                 Crawler.link_queue_lock.acquire()
                 link = Crawler.link_queue.pop(0)
-                print(link)
+                # print(link)
                 Crawler.link_queue_lock.release()
-                extracted_words, extracted_links = html_extractor(link)  # crawl that link
+                extracted_words, extracted_links = html_extractor(link)  # crawl that link and get then links and the words of the document
                 Crawler.word_queue_lock.acquire()
-                Crawler.word_queue.append({'link':link,'words': extracted_words})   #save the words
+                Crawler.word_queue.append({'link':link,'words': extracted_words})   #save the words in word_queue
                 Crawler.word_queue_lock.release()
                 Crawler.link_queue_lock.acquire()
-                [Crawler.link_queue.append(link) for link in extracted_links]       #save the links
+                [Crawler.link_queue.append(link) for link in extracted_links]       #save the links to be processed in link_queue
                 Crawler.link_queue_lock.release()
                 Crawler.decrement_page_number()
 
-            print("number of items in crawler queue that wait to be processed by miniIndexPusher : " , len(Crawler.word_queue))
+            print("Elements in word_queue : " , len(Crawler.word_queue))
 
 
-            #time.sleep(2)
 
