@@ -15,7 +15,7 @@ class miniIndexPusher (Index,threading.Thread):
     def set_page_number(n):
         miniIndexPusher.nof_pages = n
 
-    # creates an object for each word that represents :
+    # creates an object for a word that represents :
     # 1) name of a document a word is contained
     # 2) the word's frequency in that document
 

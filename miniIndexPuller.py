@@ -20,14 +20,16 @@ class miniIndexPuller(Index, threading.Thread):
             t += 2
         else:
             Index.mini_index_queue_lock.acquire()
-            termObject = Index.miniIndex.pop(0)
+            termObject = Index.miniIndex.pop(0)    # remove a word from miniIndex
             Index.mini_index_queue_lock.release()
             term = termObject.get("_id")
             DocWithTf = termObject.get("nameTf")
             Index.collection.find_one_and_update(
+                # find term in database
                 {"_id": term},
+                # increment sumOfDocuments by 1 and append the object with the document and tf in the field "nameTf" of database
                 {"$inc" : {"sumOfDocuments": 1},"$push" : {"nameTf" : {"$each" : DocWithTf }}},
-                upsert = True
+                upsert = True    # creates the record in database if it does not exist
             )
             t = 0
         return t
