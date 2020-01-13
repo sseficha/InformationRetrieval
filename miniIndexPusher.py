@@ -79,4 +79,6 @@ class miniIndexPusher (Index,threading.Thread):
         time.sleep(3)
         while miniIndexPusher.nof_pages > 0:
             self.updateMiniIndex()
+            print("number of documents left to be processed : ", miniIndexPusher.nof_pages)
+
 

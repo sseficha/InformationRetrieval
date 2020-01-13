@@ -18,7 +18,7 @@ class Index(threading.Thread):
     mini_index_queue_lock = None
     word_queue_lock = None
     mini_index_pull_lock = None
-    smt = 0
+
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -52,12 +52,12 @@ class Index(threading.Thread):
         accumulators = []
         N = Index.documentsCollection.find().count()
         for term in query:
-            # search for term in database , and store in var the term's data
+            # search for term in database , and store in variable var the term's data
             var = Index.collection.find_one({"_id": term}, {"sumOfDocuments" : 1, "nameTf" : 1})
             # if term is not in database , program checks the next term of the query
             if var is None:
                 continue
-            idf = log(N / var.get("sumOfDocuments"))  # var.get("sumOfDocuments") represents nt
+            idf = log(N / var.get("sumOfDocuments"))
             documents = var.get("nameTf")
             for document in documents:
                 docName = document["name"]
@@ -65,7 +65,6 @@ class Index(threading.Thread):
                 if next((item for item in accumulators if item["name"] == docName), None) is None:
                     accumulators.append({"name" : docName, "value" : 0})
 
-                # update an accumulator
                 tf = document["tf"]
                 # check if an accumulator already exists and updates him
                 x = next(item for item in accumulators if item["name"] == docName)
@@ -73,10 +72,10 @@ class Index(threading.Thread):
 
         # normalization with Td(number of unique terms in a document)
         for item in accumulators:
-            # search database for the document name and stores in variable td the Td of the document
+            # search database for the document name and store in variable td the Td of the document
             td = Index.documentsCollection.find_one({"_id": item["name"]}, {"_id": 0, "Td": 1})
             x = item["value"]
-            # normalize each document score in accumulator structure
+            # normalize document score
             item.update({"value" : x/(td.get("Td"))})
 
         # sorting

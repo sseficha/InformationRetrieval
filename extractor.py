@@ -9,17 +9,8 @@ from nltk.corpus import stopwords
 
 def html_extractor(url):
 
-    # f = open('./samples/'+url, 'r')
-    # html = f.read()
-    # f.close()
-    # soup = BeautifulSoup(html, 'html.parser')
-    # links = []
-    # for link in soup.findAll('a'):
-    #     links.append(link.get('href'))
 
-
-    res = requests.get(url)  # thelei try except giati petaei error
-
+    res = requests.get(url)
     html = res.text
     soup = BeautifulSoup(html, 'html.parser')
     links = []

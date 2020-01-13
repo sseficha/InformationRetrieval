@@ -22,26 +22,11 @@
         <h1 style="margin-top: 50px;">Results</h1>
         <ul>
         {% for x in data %}
-            <li>{{x.name}} {{x.value}}</li>
+            <li><a href={{x.name}}>{{x.name}}</a> {{x.value}}</li>
         {% endfor %}
 </ul>
     </div>
 
-<script>
-
-<!--        window.onload = function(data){-->
-<!--            console.log(data)-->
-<!--        }-->
-
-<!--       window.addEventListener("load",function() {-->
-<!--            document.getElementById('form').addEventListener("submit",function(e) {-->
-<!--                e.preventDefault(); // before the code-->
-<!--                alert('hi');-->
-<!--            });-->
-<!--       });-->
-
-
-</script>
 </body>
 
 
