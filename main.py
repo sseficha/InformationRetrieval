@@ -43,7 +43,7 @@ for i in range(0, nof_threads):
     crawler_list.append(Crawler())
 
 for i in range(0, 6):
-    miniIndexPuller_list.append(miniIndexPuller())
+    miniIndexPuller_list.append(miniIndexPuller())    # 6 instances of miniIndexPuller cause searching in DB is a hefty task
 
 
 Crawler.set_page_number(nof_pages)
@@ -58,7 +58,7 @@ for crawler in crawler_list:
 
 miniIndex = []
 
-pusher1 = miniIndexPusher()        #1 instance of miniIndexPusher is enough cause it doesn't do that much work
+pusher1 = miniIndexPusher()        # 1 instance of miniIndexPusher is enough cause it doesn't do that much work
 
 for puller in miniIndexPuller_list:
     puller.start()
